@@ -39,6 +39,19 @@
  *     -  Added tracking for Solar System objects
 */
 
+/*
+ *     Modifications by Hamboo
+ *     -  Modified for A4988 stepper driver
+ *     -  Use Joystick key to switch between day and night mode
+ *     -  Enable stepper by enable pin on stepper driver
+ *     -  Different RA/DEC gears
+ *     -  Store touch calibration on SD card
+ *     -  Fix Bitmap draw with serial debug disabled
+ *     -  Added BT.ino from rDUINOScope-tjctm24024-spi-master_different_gears!!!\rDUIUNOScope_Fayrouz_ILI9341_New_GUI (Change Line 92 -> DEC = 90)
+ *     -  Added define (no_gps) to skip GPS positioning
+ *     -  Fixed some minor issues in the GUI (e.g. Fan On/Off status in top bar)
+*/
+
 #include "defines.h" //notes, colors, stars and planets
 #include <DHT.h>
 //#include "src/DHT-sensor-library-master/DHT.h"
