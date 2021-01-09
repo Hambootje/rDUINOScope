@@ -47,9 +47,15 @@
  *     -  Different RA/DEC gears
  *     -  Store touch calibration on SD card
  *     -  Fix Bitmap draw with serial debug disabled
- *     -  Added BT.ino from rDUINOScope-tjctm24024-spi-master_different_gears!!!\rDUIUNOScope_Fayrouz_ILI9341_New_GUI (Change Line 92 -> DEC = 90)
+ *     -  Addition for Stellarium Mobile: Added BT.ino from rDUINOScope-tjctm24024-spi-master_different_gears!!!\rDUIUNOScope_Fayrouz_ILI9341_New_GUI (Change Line 92 -> DEC = 90)
  *     -  Added define (no_gps) to skip GPS positioning
  *     -  Fixed some minor issues in the GUI (e.g. Fan On/Off status in top bar)
+ *     -  Fixed additional item after messier 112. There was indexing after this item done, pointing to random location in memory
+ *     -  Keep "moving step back please" message on screen until slewing is finished
+ *     -  Fixed: selecting object below horizon twice does not show mainscreen with object not visable
+ *     -  Roll over pager when loading object (next on last page goes to first page)
+ *     -  Show page on bottom of the screen when loading object
+ *     -  Added "Set Home position" option to CoordinatesScreen screen
 */
 
 #include "defines.h" //notes, colors, stars and planets
@@ -68,7 +74,7 @@
 #define WORMRA 130
 #define WORMDEC 65
 
-#define REDUCTOR 3 // 1:3 gear reduction
+#define REDUCTOR 3    // 1:3 gear reduction
 #define DRIVE_STP 400 // Stepper drive have 200 steps per revolution
 #define MICROSteps 16 // I'll use 1/16 microsteps mode to drive sidereal - also determines the LOWEST speed.
 
@@ -97,8 +103,6 @@ int Clock_Lunar;       // Variable for the Interruptions. nterruption is initial
 ////////////////////////////////////////////////
 #include <TinyGPS++.h>
 #include <TimeLib.h>
-#include <XPT2046_Touchscreen.h> // Use edited library from rDUINOScope ILI9488 repo
-#include <SPI.h>
 #include <SD.h>
 #include <Adafruit_GFX.h> // Core graphics library
 #include <ILI9488.h>      // Use DMA version to increase speed
@@ -106,14 +110,15 @@ int Clock_Lunar;       // Variable for the Interruptions. nterruption is initial
 #include <DS3231.h>
 #include <SPI.h>
 #include <math.h>
+#include <XPT2046_Touchscreen.h> // Use edited library from rDUINOScope ILI9488 repo
 
 #ifdef VSCODE
-  #include "BT.ino"
-  #include "functions.ino"
-  #include "regular_updates.ino"
-  #include "graphic_screens.ino"
-  #include "planets_calc.ino"
-  #include "touch_inputs.ino"
+#include "BT.ino"
+#include "functions.ino"
+#include "regular_updates.ino"
+#include "graphic_screens.ino"
+#include "planets_calc.ino"
+#include "touch_inputs.ino"
 #endif
 
 ////////////////////////////////////////////////
@@ -126,14 +131,14 @@ ILI9488 tft(TFT_CS, TFT_DC, TFT_RST);
 
 /** ADS7873 pin map */
 #define TP_CS 4
-#define TP_IRQ 3  //2
+#define TP_IRQ 3 //2
 
 XPT2046_Touchscreen myTouch(TP_CS, TP_IRQ);
 
 TS_Point p;
 
 /** DHT22 pin map */
-#define DHTPIN 22  //3
+#define DHTPIN 22 //3
 #define DHTTYPE DHT22
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -193,7 +198,7 @@ double DELTA_DEC_ADJUST = 1; // cos DEC
 // Default values to load when CANCEL button is hit on the GPS screen
 float OBSERVATION_LONGITUDE = 6.191777683203146;
 float OBSERVATION_LATTITUDE = 51.63693920124171;
-float OBSERVATION_ALTITUDE = 21.00;   // Weeze
+float OBSERVATION_ALTITUDE = 21.00; // Weeze
 int TIME_ZONE = 1;
 // .............................................................
 int GPS_iterrations = 0;
@@ -202,6 +207,9 @@ double JD;
 String BTs;
 
 int last_button, MESS_PAGER, TREAS_PAGER, STARS_PAGER, CUSTOM_PAGER;
+int NR_MESS, NR_TREAS, NR_CUSTOM;
+int MESS_PAGES, TREAS_PAGES, CUSTOM_PAGES;
+
 boolean IS_TFT_ON = true;
 boolean IS_STEPPERS_ON = true;
 boolean IS_OBJ_VISIBLE = false;
@@ -225,7 +233,7 @@ int MAIN_SCREEN_MENU = 0;
 
 int CURRENT_SCREEN = 0;
 
-int LOAD_SELECTOR; // selector to show which LOADING mechanism is used: 1 - Messier, 2 - File, 3 - NGCs
+int LOAD_SELECTOR = 1; // selector to show which LOADING mechanism is used: 1 - Messier, 2 - File, 3 - NGCs
 boolean TRACKING_MOON;
 boolean sun_confirm = false;
 
@@ -275,19 +283,19 @@ double det = 0;
 
 // PIN selection
 int speakerOut = DAC1;
-int RA_STP = 41; 
+int RA_STP = 41;
 int RA_DIR = 39;
-int DEC_STP = 25; 
-int DEC_DIR = 23; 
+int DEC_STP = 25;
+int DEC_DIR = 23;
 
 // New version of the HW 1.4_c was with changed pins for RA_MODE2 and RA_MODE1
 // I needed to switch them in the code!
 // int RA_MODE1 = 13;
 // int RA_MODE2 = 12;
 
-int RA_MODE0 = 51; 
-int RA_MODE1 = 49; 
-int RA_MODE2 = 47; 
+int RA_MODE0 = 51;
+int RA_MODE1 = 49;
+int RA_MODE2 = 47;
 int DEC_MODE0 = 35;
 int DEC_MODE1 = 33;
 int DEC_MODE2 = 31;
@@ -295,10 +303,10 @@ int DEC_MODE2 = 31;
 int RA_ENABLE = 53;
 int DEC_ENABLE = 37;
 
-int yPin = A10; //A0;
-int xPin = A9 ; //A1;
-int FAN1 = 36; //37;
-int FAN2 = 34; //39;
+int yPin = A10;    //A0;
+int xPin = A9;     //A1;
+int FAN1 = 36;     //37;
+int FAN2 = 34;     //39;
 int TFTBright = 9; //13;
 int Joy_SW = A11;
 // int POWER_DRV8825 = A0 ;// A8;
@@ -310,11 +318,11 @@ double cty = 327;
 double slope_x = 10.91;
 double slope_y = 7.47;
 
-boolean options_ok=false;
-boolean sd_ok=true;
-int last_button_state=LOW;
+boolean options_ok = false;
+boolean sd_ok = true;
+int last_button_state = LOW;
 int button_state;
-long lastDebounceTime=0;
+long lastDebounceTime = 0;
 
 void setup(void)
 {
@@ -324,10 +332,10 @@ void setup(void)
   {
   }
 #endif
-  
-  #ifndef no_gps
+
+#ifndef no_gps
   Serial2.begin(9600); // Initialize GPS communication on PINs: 17 (RX) and 16 (TX)
-  #endif
+#endif
   Serial3.begin(9600); // Bluetooth communication on PINs:  15 (RX) and 14 (TX)
   pinMode(speakerOut, OUTPUT);
 
@@ -339,9 +347,9 @@ void setup(void)
 
   MicroSteps_360_RA = wwRA * www;
   MicroSteps_360_DEC = wwDEC * www;
-  
-  RA_90 = MicroSteps_360_RA / 4;  // How much in microSteps the RA motor have to turn in order to make 6h = 90 degrees;
-  DEC_90 = MicroSteps_360_DEC / 4;   // How mich in microSteps the DEC motor have to turn in order to make 6h = 90 degrees;
+
+  RA_90 = MicroSteps_360_RA / 4;   // How much in microSteps the RA motor have to turn in order to make 6h = 90 degrees;
+  DEC_90 = MicroSteps_360_DEC / 4; // How mich in microSteps the DEC motor have to turn in order to make 6h = 90 degrees;
   HA_H_CONST = MicroSteps_360_RA / 360;
   DEC_D_CONST = MicroSteps_360_DEC / 360;
 
@@ -353,7 +361,7 @@ void setup(void)
   Serial.print("Clock_Sidereal = ");
   Serial.println(Clock_Sidereal, 6);
 #endif
-// 
+  //
   bool touch_init = myTouch.begin(); //ADS7873 begin5);
   // myTouch.setRotation(4);
   myTouch.setRotation(5);
@@ -383,7 +391,7 @@ void setup(void)
   pinMode(RA_ENABLE, OUTPUT);
   pinMode(DEC_ENABLE, OUTPUT);
   digitalWrite(DEC_ENABLE, HIGH); // disable stepper driver
-  digitalWrite(RA_ENABLE, HIGH); // disable stepper driver
+  digitalWrite(RA_ENABLE, HIGH);  // disable stepper driver
 
   // Joystick
   pinMode(Joy_SW, INPUT_PULLUP);
@@ -401,7 +409,6 @@ void setup(void)
   Timer3.attachInterrupt(Sidereal_rate);
   //  Timer3.start(Clock_Sidereal); // executes the code every 62.329 ms.
 
-
   // init SD card
   for (int i = 0; i < 10 && !SD.begin(SD_CS); i++)
   {
@@ -415,8 +422,8 @@ void setup(void)
   // load options from SD card
   if (SD.exists("options.txt") && sd_ok)
   {
-     loadOptions_SD();
-     options_ok=true;
+    loadOptions_SD();
+    options_ok = true;
   }
 
   // if (analogRead(DAY_NIGHT_PIN) > 800)
@@ -466,7 +473,7 @@ void setup(void)
   // The below part cannot be removed form the code
   // You can add messages, but not remove!
   analogWrite(TFTBright, 255);
-  
+
   tft.setTextColor(title_bg);
   tft.setTextSize(4);
   tft.println("rDUINO Scope");
@@ -499,20 +506,23 @@ void setup(void)
   // see if the card is present and can be initialized:
   char in_char;
   String items = "";
-  int j = 0;
-  int k = 0;
+  //int j = 0;
+  //int k = 0;
   MESS_PAGER = 0;
   TREAS_PAGER = 0;
   STARS_PAGER = 0;
   CUSTOM_PAGER = 0;
+  NR_MESS = 0;
+  NR_TREAS = 0;
+  NR_CUSTOM = 0;
 
   volatile bool check = true;
   tft.print("--> Initializing touchscreen... ");
 
-  #ifdef serial_debug
+#ifdef serial_debug
   Serial.print("Touch init = ");
   Serial.println(touch_init, 6);
-  #endif
+#endif
 
   if (!touch_init)
   {
@@ -541,7 +551,6 @@ void setup(void)
     tft.print("OK    ");
     tft.setTextColor(d_text);
     tft.println(dht.readTemperature());
-    
   }
 
   tft.print("--> Initializing RTC... ");
@@ -565,14 +574,15 @@ void setup(void)
     tft.setTextColor(GREEN);
     tft.println("OK");
     tft.setTextColor(d_text);
-  } else  {
+  }
+  else
+  {
     tft.setTextColor(RED);
     tft.println("ERROR: Card failed, or not present\n");
     tft.println("Try formatting the SD card to FAT32 and replace the files.");
     tft.setTextColor(d_text);
     check = false;
   }
-
 
   //Debug or card initialized:
   //loadOptions_SD();
@@ -590,15 +600,22 @@ void setup(void)
     {
       in_char = dataFile.read();
       items += in_char;
-      k = k + 1;
+      // k = k + 1;
       if (in_char == '\n')
       {
-        Messier_Array[j] = items;
-        j = j + 1;
-        //          Serial.print(items);
+        Messier_Array[NR_MESS] = items;
+        NR_MESS++;
+        deb_print(items);
         items = "";
       }
     }
+
+    deb_print("nr of items ");
+    deb_println(NR_MESS);
+    MESS_PAGES = (NR_MESS / 20) + 1;
+    deb_print("nr of pages ");
+    deb_println(MESS_PAGES);
+
     tft.setTextColor(GREEN);
     tft.println("OK");
     tft.setTextColor(d_text);
@@ -614,8 +631,8 @@ void setup(void)
 
   dataFile.close();
   items = "";
-  j = 0;
-  k = 0;
+  // j = 0;
+  // k = 0;
   dataFile = SD.open("treasure.csv");
   // if the file is available, write to it:
   if (dataFile && sd_ok)
@@ -626,15 +643,22 @@ void setup(void)
     {
       in_char = dataFile.read();
       items += in_char;
-      k = k + 1;
+      //k = k + 1;
       if (in_char == '\n')
       {
-        Treasure_Array[j] = items;
-        j = j + 1;
-        //          Serial.print(items);
+        Treasure_Array[NR_TREAS] = items;
+        NR_TREAS++;
+        deb_print(items);
         items = "";
       }
     }
+
+    deb_print("nr of items ");
+    deb_println(NR_TREAS);
+    TREAS_PAGES = (NR_TREAS / 20) + 1;
+    deb_print("nr of pages ");
+    deb_println(TREAS_PAGES);
+
     tft.setTextColor(GREEN);
     tft.println("OK");
     tft.setTextColor(d_text);
@@ -649,11 +673,10 @@ void setup(void)
   }
   dataFile.close();
   last_button = 0;
-  LOAD_SELECTOR = 0;
 
   items = "";
-  j = 0;
-  k = 0;
+  // j = 0;
+  // k = 0;
   dataFile = SD.open("custom.csv");
 
   // if the file is available, write to it:
@@ -665,15 +688,22 @@ void setup(void)
     {
       in_char = dataFile.read();
       items += in_char;
-      k = k + 1;
+      //k = k + 1;
       if (in_char == '\n')
       {
-        custom_Array[j] = items;
-        j = j + 1;
+        custom_Array[NR_CUSTOM] = items;
+        NR_CUSTOM++;
         //          Serial.print(items);
         items = "";
       }
     }
+
+    deb_print("nr of items ");
+    deb_println(NR_CUSTOM);
+    CUSTOM_PAGES = (NR_CUSTOM / 20) + 1;
+    deb_print("nr of pages ");
+    deb_println(CUSTOM_PAGES);
+
     tft.setTextColor(GREEN);
     tft.println("OK");
     tft.setTextColor(d_text);
@@ -688,7 +718,6 @@ void setup(void)
   }
   dataFile.close();
   last_button = 0;
-  LOAD_SELECTOR = 0;
 
   // tft.println("\n.................................\n");
 
@@ -706,8 +735,7 @@ void setup(void)
     tft.println("FAIL");
     tft.setTextColor(d_text);
   }
-  
-  
+
   tft.println("--> initializing BlueTooth");
   delay(100);
   tft.println("--> initializing GPS");
@@ -760,17 +788,16 @@ void setup(void)
     delay(100);
     SoundOn(note_d, 48);
     delay(100);
-
   }
 
   delay(500);
 
-  //CURRENT_SCREEN = 1; 
-  #ifdef no_gps 
-    drawClockScreen(); // Skip GPS
-  #else
-    drawGPSScreen(); 
-  #endif
+//CURRENT_SCREEN = 1;
+#ifdef no_gps
+  drawClockScreen(); // Skip GPS
+#else
+  drawGPSScreen();
+#endif
 
   UPD_T = millis();
   UPD_LST = millis();
@@ -782,8 +809,7 @@ void setup(void)
 
   // digitalWrite(POWER_DRV8825, HIGH == !reverse_logic); // Switch on the Motor Driver Power!
   digitalWrite(DEC_ENABLE, LOW); //enable stepper drivers
-  digitalWrite(RA_ENABLE, LOW); //enable stepper drivers
-
+  digitalWrite(RA_ENABLE, LOW);  //enable stepper drivers
 }
 
 void loop(void)
@@ -900,33 +926,31 @@ void loop(void)
       tx = (p.x - clx) / slope_x;
       ty = (p.y - cty) / slope_y;
 
-
       delay(100); // slow down touch identification
 
-      //Useful to debug touch:
-      #ifdef serial_debug
-            Serial.print(" -> Touched: p.z: ");
-            Serial.print(p.z);
-            Serial.print(" -> p.x: ");
-            Serial.print(p.x);
-            Serial.print(" -> tx: ");
-            Serial.print(tx);
-            Serial.print(" -> p.y: ");
-            Serial.print(p.y);
-            Serial.print(", ty = ");
-            Serial.println(ty);
-      #endif
+//Useful to debug touch:
+#ifdef serial_debug
+      Serial.print(" -> Touched: p.z: ");
+      Serial.print(p.z);
+      Serial.print(" -> p.x: ");
+      Serial.print(p.x);
+      Serial.print(" -> tx: ");
+      Serial.print(tx);
+      Serial.print(" -> p.y: ");
+      Serial.print(p.y);
+      Serial.print(", ty = ");
+      Serial.println(ty);
+#endif
     }
     considerTouchInput(tx, ty);
     considerDayNightMode();
-
 
     // OTHER UPDATES ?  ... if any
     // Happens every 2 seconds
     if (((millis() - UPD_T) > 2000) && (IS_MANUAL_MOVE == false))
     {
       // #ifdef serial_debug
-        // Serial.println("Regular updates");
+      // Serial.println("Regular updates");
       // #endif
       calculateLST_HA(); // Make sure it Updates the LST! used on Main Screen and When Calculating current Coords.
       considerTimeUpdates();
@@ -934,12 +958,14 @@ void loop(void)
       considerTempUpdates();
       // I need to make sure the Drives are not moved to track the stars,
       // if Object is below horizon ALT < 0 - Stop tracking.
+
       if ((ALT <= 0) && (IS_TRACKING == true) && (IS_IN_OPERATION == true))
       {
         IS_TRACKING = false;
         Timer3.stop();
         drawMainScreen();
       }
+
       UPD_T = millis();
     }
   }

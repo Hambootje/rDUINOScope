@@ -98,6 +98,7 @@ void calculateLST_HA()
     IS_OBJECT_DEC_FOUND = true;
     Slew_RA_timer = 0;
     RA_finish_last = 0;
+    deb_print("Object is out of sight! Telescope not moved.");
   } else {
     IS_OBJ_VISIBLE = true;
   }
@@ -150,6 +151,7 @@ void calculateLST_HA()
 
 void selectOBJECT_M(int index_, int objects)
 {
+  
   OBJECT_Index = index_;
 
   if (objects == 0)
@@ -182,7 +184,6 @@ void selectOBJECT_M(int index_, int objects)
     OBJECT_DETAILS += Messier_Array[index_].substring(i5 + 1, i6) + " and size of ";
     OBJECT_DETAILS += Messier_Array[index_].substring(i6 + 1, i7);
     OBJECT_DETAILS += "\n" + Messier_Array[index_].substring(i8 + 1, Messier_Array[index_].length() - 1);
-
   }
   else if (objects == 1)
   { // I've selected a Treasure Object
@@ -1843,4 +1844,52 @@ int calculateBatteryLevel()
     }
   #endif*/
   return pmin;
+}
+
+void deb_print (char *str) {
+    #ifdef serial_debug
+      Serial.print(str);
+    #endif
+
+}
+void deb_print (int str) {
+    #ifdef serial_debug
+      Serial.print(str);
+    #endif
+
+}
+void deb_print (String str) {
+    #ifdef serial_debug
+      Serial.print(str);
+    #endif
+
+}
+void deb_print (double str) {
+    #ifdef serial_debug
+      Serial.print(str);
+    #endif
+
+}
+
+void deb_println (char *str) {
+    #ifdef serial_debug
+      Serial.println(str);
+    #endif
+}
+
+void deb_println (int str) {
+    #ifdef serial_debug
+      Serial.println(str);
+    #endif
+}
+
+void deb_println (String str) {
+    #ifdef serial_debug
+      Serial.println(str);
+    #endif
+}
+void deb_println (double str) {
+    #ifdef serial_debug
+      Serial.println(str);
+    #endif
 }
