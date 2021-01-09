@@ -101,7 +101,6 @@ int Clock_Solar;       // Variable for the Interruptions. nterruption is initial
 int Clock_Lunar;       // Variable for the Interruptions. nterruption is initialized depending on the DATA above -in miliseconds
 
 ////////////////////////////////////////////////
-#include <TinyGPS++.h>
 #include <TimeLib.h>
 #include <SD.h>
 #include <Adafruit_GFX.h> // Core graphics library
@@ -110,6 +109,7 @@ int Clock_Lunar;       // Variable for the Interruptions. nterruption is initial
 #include <DS3231.h>
 #include <SPI.h>
 #include <math.h>
+#include <TinyGPS++.h>
 #include <XPT2046_Touchscreen.h> // Use edited library from rDUINOScope ILI9488 repo
 
 #ifdef VSCODE
