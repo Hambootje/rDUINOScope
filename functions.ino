@@ -8,11 +8,13 @@ void calculateLST_HA()
   int Y = Date_q.substring(6).toInt();
   int S = Time_q.substring(6).toInt();
   int H = Time_q.substring(0, 2).toInt(); // hours
-  if (Summer_Time == 1) {
+  if (Summer_Time == 1)
+  {
     H -= 1;
   }
   int MN = Time_q.substring(3, 5).toInt();
-  if (M < 3) {
+  if (M < 3)
+  {
     M = M + 12;
     Y = Y - 1;
   }
@@ -27,7 +29,7 @@ void calculateLST_HA()
   double MJD = CurrentJDN - 2400000.5;
   int MJD0 = (int)MJD;
   float ut = (MJD - MJD0) * 24.0;
-  double t_eph  = (MJD0 - 51544.5) / 36525.0;
+  double t_eph = (MJD0 - 51544.5) / 36525.0;
   double GMST = 6.697374558 + 1.0027379093 * ut + (8640184.812866 + (0.093104 - 0.0000062 * t_eph) * t_eph) * t_eph / 3600.0;
 
   LST = GMST + OBSERVATION_LONGITUDE / 15.0;
@@ -35,7 +37,7 @@ void calculateLST_HA()
   //reduce it to 24 format
   int LSTint = (int)LST;
   LSTint /= 24;
-  LST = LST - (double) LSTint * 24;
+  LST = LST - (double)LSTint * 24;
 
   // Now I'll use the global Variables OBJECT_RA_H and OBJECT_RA_M  To calculate the Hour angle of the selected object.
 
@@ -46,11 +48,13 @@ void calculateLST_HA()
   HAHour = int(HA_decimal);
   HAMin = (HA_decimal - HAHour) * 60;
 
-  if (HAMin < 0) {
+  if (HAMin < 0)
+  {
     HAHour -= 1;
     HAMin += 60;
   }
-  if (HAHour < 0) {
+  if (HAHour < 0)
+  {
     HAHour += 24;
   }
 
@@ -58,10 +62,9 @@ void calculateLST_HA()
   double rDEC = 0;
   rDEC = OBJECT_DEC_D + (OBJECT_DEC_M / 60);
 
-
   //rDEC += delta_a_DEC;
   rDEC *= 0.0174532925199;
-  double rHA =  HA_decimal * 0.26179938779915;   // 0.261799.. = 15 * 3.1415/180  (to convert to Deg. and * Pi) :)
+  double rHA = HA_decimal * 0.26179938779915; // 0.261799.. = 15 * 3.1415/180  (to convert to Deg. and * Pi) :)
   double rLAT = OBSERVATION_LATTITUDE * 0.0174532925199;
 
   IS_OBJ_VISIBLE = true;
@@ -76,7 +79,7 @@ void calculateLST_HA()
   ALT = sin_rDEC * sin_rLAT;
   ALT += (cos_rDEC * cos_rLAT * cos_rHA);
   double sin_rALT = ALT;
-  ALT =  asin(ALT);
+  ALT = asin(ALT);
   double cos_rALT = cos(ALT);
   ALT *= 57.2958;
 
@@ -84,13 +87,16 @@ void calculateLST_HA()
   AZ = sin_rDEC - AZ;
   AZ /= (cos_rALT * cos_rLAT);
   AZ = acos(AZ) * 57.2957795;
-  if (sin_rHA > 0) {
+  if (sin_rHA > 0)
+  {
     AZ = 360 - AZ;
   }
 
-  if (ALT < 0) {
+  if (ALT < 0)
+  {
     IS_OBJ_VISIBLE = false;
-    if ((IS_BT_MODE_ON == true) && (IS_OBJ_FOUND == false)) {
+    if ((IS_BT_MODE_ON == true) && (IS_OBJ_FOUND == false))
+    {
       Serial3.println("Object is out of sight! Telescope not moved.");
     }
     IS_OBJ_FOUND = true;
@@ -99,26 +105,32 @@ void calculateLST_HA()
     Slew_RA_timer = 0;
     RA_finish_last = 0;
     deb_print("Object is out of sight! Telescope not moved.");
-  } else {
+  }
+  else
+  {
     IS_OBJ_VISIBLE = true;
   }
 
-
   // Take care of the Meridian Flip coordinates
   // This will make the telescope do Meridian Flip... depending on the current HA and predefined parameter: MIN_TO_MERIDIAN_FLIP
-  if (IS_MERIDIAN_FLIP_AUTOMATIC) {
+  if (IS_MERIDIAN_FLIP_AUTOMATIC)
+  {
     mer_flp = HAHour + ((HAMin + MIN_TO_MERIDIAN_FLIP) / 60);
     float old_HAMin = HAMin;
     float old_HAHour = HAHour;
-    if (IS_POSIBLE_MERIDIAN_FLIP == true) {
-      if (mer_flp >= 24) {
+    if (IS_POSIBLE_MERIDIAN_FLIP == true)
+    {
+      if (mer_flp >= 24)
+      {
         HAMin = HAMin - 60;
         HAHour = 0;
-        if (MERIDIAN_FLIP_DO == false) {
+        if (MERIDIAN_FLIP_DO == false)
+        {
           IS_TRACKING = false;
           Timer3.stop();
           OnScreenMsg(1);
-          if (IS_SOUND_ON) {
+          if (IS_SOUND_ON)
+          {
             SoundOn(note_C, 32);
             delay(200);
             SoundOn(note_C, 32);
@@ -130,18 +142,24 @@ void calculateLST_HA()
           IS_OBJECT_RA_FOUND = false;
           IS_OBJECT_DEC_FOUND = false;
           Slew_timer = millis();
-          Slew_RA_timer = Slew_timer + 20000;   // Give 20 sec. advance to the DEC. We will revise later.
+          Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
           MERIDIAN_FLIP_DO = true;
           drawMainScreen();
-        } else {
-          if ((old_HAHour == HAHour) && (old_HAMin == HAMin)) {  // Meridian Flip is done so the code above will not execute
+        }
+        else
+        {
+          if ((old_HAHour == HAHour) && (old_HAMin == HAMin))
+          { // Meridian Flip is done so the code above will not execute
             MERIDIAN_FLIP_DO = false;
           }
         }
         //DEC is set as part of the SlewTo function
       }
-    } else {
-      if (mer_flp >= 24) {
+    }
+    else
+    {
+      if (mer_flp >= 24)
+      {
         IS_TRACKING = false;
         Timer3.stop();
       }
@@ -151,7 +169,7 @@ void calculateLST_HA()
 
 void selectOBJECT_M(int index_, int objects)
 {
-  
+
   OBJECT_Index = index_;
 
   if (objects == 0)
@@ -174,7 +192,8 @@ void selectOBJECT_M(int index_, int objects)
     String sign = OBJ_DEC.substring(1, 2);
     OBJECT_DEC_D = OBJ_DEC.substring(2, OBJ_DEC.indexOf('°')).toFloat();
     OBJECT_DEC_M = OBJ_DEC.substring(OBJ_DEC.indexOf('°') + 1, OBJ_DEC.length() - 1).toFloat();
-    if (sign.equals("-")) {
+    if (sign.equals("-"))
+    {
       OBJECT_DEC_D *= -1;
       OBJECT_DEC_M *= -1;
     }
@@ -205,7 +224,8 @@ void selectOBJECT_M(int index_, int objects)
     String sign = OBJ_DEC.substring(1, 2);
     OBJECT_DEC_D = OBJ_DEC.substring(2, OBJ_DEC.indexOf('°')).toFloat();
     OBJECT_DEC_M = OBJ_DEC.substring(OBJ_DEC.indexOf('°') + 1, OBJ_DEC.length() - 1).toFloat();
-    if (sign == "-") {
+    if (sign == "-")
+    {
       OBJECT_DEC_D *= -1;
       OBJECT_DEC_M *= -1;
     }
@@ -215,7 +235,6 @@ void selectOBJECT_M(int index_, int objects)
     OBJECT_DETAILS += Treasure_Array[index_].substring(i5 + 1, i6) + " and size of ";
     OBJECT_DETAILS += Treasure_Array[index_].substring(i6 + 1, i7);
     OBJECT_DETAILS += "\n" + Treasure_Array[index_].substring(i8 + 1, Treasure_Array[index_].length() - 1);
-
   }
   else if (objects == 2)
   {
@@ -231,7 +250,8 @@ void selectOBJECT_M(int index_, int objects)
     String OBJ_DEC = Stars[index_].substring(i3, Stars[index_].length());
     String sign = OBJ_DEC.substring(0, 1);
     OBJECT_DEC_D = OBJ_DEC.substring(1, OBJ_DEC.indexOf('°')).toFloat();
-    if (sign == "-") {
+    if (sign == "-")
+    {
       OBJECT_DEC_D *= (-1);
     }
     OBJECT_DEC_M = 0;
@@ -250,7 +270,8 @@ void selectOBJECT_M(int index_, int objects)
     String OBJ_DEC = Iter_Stars[index_].substring(i3, Iter_Stars[index_].length());
     String sign = OBJ_DEC.substring(0, 1);
     OBJECT_DEC_D = OBJ_DEC.substring(1, OBJ_DEC.indexOf('°')).toFloat();
-    if (sign == "-") {
+    if (sign == "-")
+    {
       OBJECT_DEC_D *= (-1);
     }
     OBJECT_DEC_M = 0;
@@ -288,23 +309,27 @@ void selectOBJECT_M(int index_, int objects)
     OBJECT_DETAILS += custom_Array[index_].substring(i6 + 1, i7);
     OBJECT_DETAILS += "\n" + custom_Array[index_].substring(i8 + 1, custom_Array[index_].length() - 1);
   }
- }
+}
 
-void Sidereal_rate() {
+void Sidereal_rate()
+{
   // when a manual movement of the drive happens. - This will avoid moving the steppers with a wrong Step Mode.
-  if ((IS_MANUAL_MOVE == false) && (IS_TRACKING) && (IS_STEPPERS_ON)) {
-    if (RA_mode_steps != MICROSteps) {
+  if ((IS_MANUAL_MOVE == false) && (IS_TRACKING) && (IS_STEPPERS_ON))
+  {
+    if (RA_mode_steps != MICROSteps)
+    {
       setmStepsMode("R", MICROSteps);
     }
     digitalWrite(RA_DIR, STP_BACK);
     PIOC->PIO_SODR = (1u << 9); // digitalWrite(RA_STP,HIGH);
     delayMicroseconds(2);
     PIOC->PIO_CODR = (1u << 9); // digitalWrite(RA_STP,LOW);
-    RA_microSteps += 1; 
+    RA_microSteps += 1;
   }
 }
 
-void cosiderSlewTo() {
+void cosiderSlewTo()
+{
   //  int RA_microSteps, DEC_microSteps;
   //  int SLEW_RA_microsteps, SLEW_DEC_microsteps;
   //  INT data type -> -2,147,483,648 to 2,147,483,647
@@ -317,24 +342,28 @@ void cosiderSlewTo() {
   float DECM;
   double HA_decimal, DEC_decimal;
 
-  if (HAHour >= 12) {
+  if (HAHour >= 12)
+  {
     HAH = HAHour - 12;
     HAM = HAMin;
     IS_MERIDIAN_PASSED = false;
-  } else {
+  }
+  else
+  {
     HAH = HAHour;
     HAM = HAMin;
     IS_MERIDIAN_PASSED = true;
   }
 
   //  ADD Correction for RA && DEC according to the Star Alignment
-  HA_decimal = ((HAH + (HAM / 60)) * 15) + delta_a_RA; // In degrees - decimal
+  HA_decimal = ((HAH + (HAM / 60)) * 15) + delta_a_RA;            // In degrees - decimal
   DEC_decimal = OBJECT_DEC_D + (OBJECT_DEC_M / 60) + delta_a_DEC; //I n degrees - decimal
 
-  SLEW_RA_microsteps  = HA_decimal * HA_H_CONST;     // Hardware Specific Code
-  SLEW_DEC_microsteps = DEC_90 - (DEC_decimal * DEC_D_CONST);    // Hardware specific code
+  SLEW_RA_microsteps = HA_decimal * HA_H_CONST;               // Hardware Specific Code
+  SLEW_DEC_microsteps = DEC_90 - (DEC_decimal * DEC_D_CONST); // Hardware specific code
 
-  if (IS_MERIDIAN_PASSED == true) {
+  if (IS_MERIDIAN_PASSED == true)
+  {
     SLEW_DEC_microsteps *= -1;
   }
 
@@ -343,7 +372,8 @@ void cosiderSlewTo() {
   // DO I REALLY NEED THIS.... ????
   // CONSIDER THE CODE WHEN YOU HAVE TIME!!!
   int home_pos = 0;
-  if ((OBJECT_RA_H == 12) && (OBJECT_RA_M == 0) && (OBJECT_DEC_D == 90) && (OBJECT_DEC_M == 0)) {
+  if ((OBJECT_RA_H == 12) && (OBJECT_RA_M == 0) && (OBJECT_DEC_D == 90) && (OBJECT_DEC_M == 0))
+  {
     SLEW_RA_microsteps = RA_90;
     SLEW_DEC_microsteps = 0;
     home_pos = 1;
@@ -354,44 +384,60 @@ void cosiderSlewTo() {
   int delta_DEC_time = millis() - Slew_timer;
   int delta_RA_timer = millis() - Slew_RA_timer;
 
-  if (delta_DEC_time >= 0 && delta_DEC_time < 900) {
-    if (DEC_mode_steps != 8) {
+  if (delta_DEC_time >= 0 && delta_DEC_time < 900)
+  {
+    if (DEC_mode_steps != 8)
+    {
       setmStepsMode("D", 8);
     }
   }
-  if (delta_DEC_time >= 900 && delta_DEC_time < 1800) {
-    if (DEC_mode_steps != 4) {
+  if (delta_DEC_time >= 900 && delta_DEC_time < 1800)
+  {
+    if (DEC_mode_steps != 4)
+    {
       setmStepsMode("D", 4);
     }
   }
-  if (delta_DEC_time >= 1800 && delta_DEC_time < 2200) {
-    if (DEC_mode_steps != 2) {
+  if (delta_DEC_time >= 1800 && delta_DEC_time < 2200)
+  {
+    if (DEC_mode_steps != 2)
+    {
       setmStepsMode("D", 2);
     }
   }
-  if (delta_DEC_time >= 2200) {
-    if (DEC_mode_steps != 1) {
+  if (delta_DEC_time >= 2200)
+  {
+    if (DEC_mode_steps != 1)
+    {
       setmStepsMode("D", 1);
     }
   }
 
-  if (delta_RA_timer >= 0 && delta_RA_timer < 900) {
-    if (RA_mode_steps != 8) {
+  if (delta_RA_timer >= 0 && delta_RA_timer < 900)
+  {
+    if (RA_mode_steps != 8)
+    {
       setmStepsMode("R", 8);
     }
   }
-  if (delta_RA_timer >= 900 && delta_RA_timer < 1800) {
-    if (RA_mode_steps != 4) {
+  if (delta_RA_timer >= 900 && delta_RA_timer < 1800)
+  {
+    if (RA_mode_steps != 4)
+    {
       setmStepsMode("R", 4);
     }
   }
-  if (delta_RA_timer >= 1800 && delta_RA_timer < 2200) {
-    if (RA_mode_steps != 2) {
+  if (delta_RA_timer >= 1800 && delta_RA_timer < 2200)
+  {
+    if (RA_mode_steps != 2)
+    {
       setmStepsMode("R", 2);
     }
   }
-  if (delta_RA_timer >= 2200) {
-    if (RA_mode_steps != 1) {
+  if (delta_RA_timer >= 2200)
+  {
+    if (RA_mode_steps != 1)
+    {
       setmStepsMode("R", 1);
     }
   }
@@ -402,23 +448,31 @@ void cosiderSlewTo() {
   // Make the motors SLOW DOWN and then STOP - using the microsteps!
   // Speed goes DOWN in 2.2 sec....then ..... FULL Speed ..... then....Speed goes Down for 3/4 Revolution of the drive
 
-  if ((abs(delta_DEC_steps) >= 1200) && (abs(delta_DEC_steps) <= 3000)) {
-    if (DEC_mode_steps != 4) {
+  if ((abs(delta_DEC_steps) >= 1200) && (abs(delta_DEC_steps) <= 3000))
+  {
+    if (DEC_mode_steps != 4)
+    {
       setmStepsMode("D", 4);
     }
   }
-  if ((abs(delta_DEC_steps) < 1200)) {
-    if (DEC_mode_steps != 8) {
+  if ((abs(delta_DEC_steps) < 1200))
+  {
+    if (DEC_mode_steps != 8)
+    {
       setmStepsMode("D", 8);
     }
   }
-  if ((abs(delta_RA_steps) >= 1200) && (abs(delta_RA_steps) <= 3000)) {
-    if (RA_mode_steps != 4) {
+  if ((abs(delta_RA_steps) >= 1200) && (abs(delta_RA_steps) <= 3000))
+  {
+    if (RA_mode_steps != 4)
+    {
       setmStepsMode("R", 4);
     }
   }
-  if (abs(delta_RA_steps) < 1200) {
-    if (RA_mode_steps != 8) {
+  if (abs(delta_RA_steps) < 1200)
+  {
+    if (RA_mode_steps != 8)
+    {
       setmStepsMode("R", 8);
       RA_move_ending = 1;
     }
@@ -426,18 +480,19 @@ void cosiderSlewTo() {
 
   // Taking care of the RA Slew_To.... and make sure it ends Last
   // NB: This way we can jump to TRACK and be sure the RA is on target
-  if (abs(delta_RA_steps) >= abs(delta_DEC_steps)) {
-    if (RA_finish_last == 0) {
+  if (abs(delta_RA_steps) >= abs(delta_DEC_steps))
+  {
+    if (RA_finish_last == 0)
+    {
       RA_finish_last = 1;
       Slew_RA_timer = millis();
     }
   }
 
-
-  // RA_STP, HIGH  51 C9 - PIOC->PIO_SODR = (1u << 9)  
-  // RA_STP, LOW   51 C9 - PIOC->PIO_CODR = (1u << 9) 
-  // DEC_STP, HIGH 35 D0 - PIOD->PIO_SODR = (1u << 0)  
-  // DEC_STP, LOW  35 D0 - PIOD->PIO_CODR = (1u << 0)  
+  // RA_STP, HIGH  51 C9 - PIOC->PIO_SODR = (1u << 9)
+  // RA_STP, LOW   51 C9 - PIOC->PIO_CODR = (1u << 9)
+  // DEC_STP, HIGH 35 D0 - PIOD->PIO_SODR = (1u << 0)
+  // DEC_STP, LOW  35 D0 - PIOD->PIO_CODR = (1u << 0)
 
   if ((IS_OBJECT_RA_FOUND == false) && (RA_finish_last == 1))
   {
@@ -503,129 +558,248 @@ void cosiderSlewTo() {
   }
 
   // Check if Object is found on both Axes...
-  if (IS_OBJECT_RA_FOUND == true && IS_OBJECT_DEC_FOUND == true) {
+  if (IS_OBJECT_RA_FOUND == true && IS_OBJECT_DEC_FOUND == true)
+  {
     IS_OBJ_FOUND = true;
     RA_move_ending = 0;
 
-    if ((home_pos == 0 ) && (ALT > 0)) {
+    if ((home_pos == 0) && (ALT > 0))
+    {
       IS_TRACKING = true;
       setmStepsMode("R", MICROSteps);
-      if (Tracking_type == 1) { // 1: Sidereal, 2: Solar, 0: Lunar;
+      if (Tracking_type == 1)
+      { // 1: Sidereal, 2: Solar, 0: Lunar;
         Timer3.start(Clock_Sidereal);
-      } else if (Tracking_type == 2) {
+      }
+      else if (Tracking_type == 2)
+      {
         Timer3.start(Clock_Solar);
-      } else if (Tracking_type == 0) {
+      }
+      else if (Tracking_type == 0)
+      {
         Timer3.start(Clock_Lunar);
       }
     }
-    if (IS_SOUND_ON) {
+    if (IS_SOUND_ON)
+    {
       SoundOn(note_C, 64);
     }
     Slew_RA_timer = 0;
     RA_finish_last = 0;
-    if (IS_BT_MODE_ON == true) {
+    if (IS_BT_MODE_ON == true)
+    {
       Serial3.println("Slew done! Object in scope!");
     }
-    if (IS_IN_OPERATION == true) {
+    if (IS_IN_OPERATION == true)
+    {
       drawMainScreen();
-    } else {
+    }
+    else
+    {
       drawConstelationScreen(SELECTED_STAR);
     }
   }
 }
 
+void step_RA()
+{
+  PIOC->PIO_SODR = (1u << 9); //digitalWrite(RA_STP, HIGH);
+  delayMicroseconds(5);
+  PIOC->PIO_CODR = (1u << 9); //digitalWrite(RA_STP, LOW);
+}
+
+void step_DEC()
+{
+  PIOD->PIO_SODR = (1u << 0); //digitalWrite(DEC_STP, HIGH);
+  delayMicroseconds(5);
+  PIOD->PIO_CODR = (1u << 0); //digitalWrite(DEC_STP, LOW);
+}
+
+// void consider_Manual_Move(int xP, int yP)
+// {
+//   if ((xP >= 0) && (xP <= 150))
+//   {
+//     setmStepsMode("R", 1);
+//     digitalWrite(RA_DIR, STP_BACK);
+//     step_RA();
+//     RA_microSteps += RA_mode_steps;
+//   }
+//   else if ((xP > 150) && (xP <= 320))
+//   {
+//     setmStepsMode("R", 4);
+//     digitalWrite(RA_DIR, STP_BACK);
+//     step_RA();
+//     RA_microSteps += RA_mode_steps;
+//   }
+//   else if ((xP > 320) && (xP <= 470))
+//   {
+//     setmStepsMode("R", 8);
+//     digitalWrite(RA_DIR, STP_BACK);
+//     step_RA();
+//     RA_microSteps += RA_mode_steps;
+//   }
+//   else if ((xP > 620) && (xP <= 770))
+//   {
+//     setmStepsMode("R", 8);
+//     digitalWrite(RA_DIR, STP_FWD);
+//     step_RA();
+//     RA_microSteps -= RA_mode_steps;
+//   }
+//   else if ((xP > 770) && (xP <= 870))
+//   {
+//     setmStepsMode("R", 4);
+//     digitalWrite(RA_DIR, STP_FWD);
+//     step_RA();
+//     RA_microSteps -= RA_mode_steps;
+//   }
+//   else if ((xP > 870) && (xP <= 1023))
+//   {
+//     setmStepsMode("R", 1);
+//     digitalWrite(RA_DIR, STP_FWD);
+//     step_RA();
+//     RA_microSteps -= RA_mode_steps;
+//   }
+
+//   if ((yP >= 0) && (yP <= 150))
+//   {
+//     setmStepsMode("D", 1);
+//     digitalWrite(DEC_DIR, STP_BACK);
+//     step_DEC();
+//     DEC_microSteps += DEC_mode_steps;
+//   }
+//   else if ((yP > 150) && (yP <= 320))
+//   {
+//     setmStepsMode("D", 4);
+//     digitalWrite(DEC_DIR, STP_BACK);
+//     step_DEC();
+//     DEC_microSteps += DEC_mode_steps;
+//   }
+//   else if ((yP > 320) && (yP <= 470))
+//   {
+//     setmStepsMode("D", 8);
+//     digitalWrite(DEC_DIR, STP_BACK);
+//     step_DEC();
+//     DEC_microSteps += DEC_mode_steps;
+//   }
+//   else if ((yP > 620) && (yP <= 770))
+//   {
+//     setmStepsMode("D", 8);
+//     digitalWrite(DEC_DIR, STP_FWD);
+//     step_DEC();
+//     DEC_microSteps -= DEC_mode_steps;
+//   }
+//   else if ((yP > 770) && (yP <= 870))
+//   {
+//     setmStepsMode("D", 4);
+//     digitalWrite(DEC_DIR, STP_FWD);
+//     step_DEC();
+//     DEC_microSteps -= DEC_mode_steps;
+//   }
+//   else if ((yP > 870) && (yP <= 1023))
+//   {
+//     setmStepsMode("D", 1);
+//     digitalWrite(DEC_DIR, STP_FWD);
+//     step_DEC();
+//     DEC_microSteps -= DEC_mode_steps;
+//   }
+//   delayMicroseconds(del);
+// }
+
 void consider_Manual_Move(int xP, int yP)
 {
-  if ((xP >= 0) && (xP <= 150))
-  {
-    setmStepsMode("R", 1);
-    digitalWrite(RA_DIR, STP_BACK);
-    PIOC->PIO_SODR = (1u << 9);  //digitalWrite(RA_STP, HIGH);
-    PIOC->PIO_CODR = (1u << 9);  //digitalWrite(RA_STP, LOW);
-    RA_microSteps += RA_mode_steps;
-  } else if ((xP > 150) && (xP <= 320))
-  {
-    setmStepsMode("R", 4);
-    digitalWrite(RA_DIR, STP_BACK);
-    PIOC->PIO_SODR = (1u << 9);  //digitalWrite(RA_STP, HIGH);
-    PIOC->PIO_CODR = (1u << 9);  //digitalWrite(RA_STP, LOW);
-    RA_microSteps += RA_mode_steps;
   
-  } else if ((xP > 320) && (xP <= 470)) {
-    setmStepsMode("R", 8);
-    digitalWrite(RA_DIR, STP_BACK);
-    PIOC->PIO_SODR = (1u << 9);  //digitalWrite(RA_STP, HIGH);
-    PIOC->PIO_CODR = (1u << 9);  //digitalWrite(RA_STP, LOW);
-    RA_microSteps += RA_mode_steps;
-  
-  } else if ((xP > 620) && (xP <= 770)) {
-    setmStepsMode("R", 8);
-    digitalWrite(RA_DIR, STP_FWD);
-    PIOC->PIO_SODR = (1u << 9);  //digitalWrite(RA_STP, HIGH);
-    PIOC->PIO_CODR = (1u << 9);  //digitalWrite(RA_STP, LOW);
-    RA_microSteps -= RA_mode_steps;
-  
-  } else if ((xP > 770) && (xP <= 870)) {
-   setmStepsMode("R", 4);
-    digitalWrite(RA_DIR, STP_FWD);
-    PIOC->PIO_SODR = (1u << 9);  //digitalWrite(RA_STP, HIGH);
-    PIOC->PIO_CODR = (1u << 9);  //digitalWrite(RA_STP, LOW);
-    RA_microSteps -= RA_mode_steps;
-  
-  } else if ((xP > 870) && (xP <= 1023)) {
-    setmStepsMode("R", 1);
-    digitalWrite(RA_DIR, STP_FWD);
-    PIOC->PIO_SODR = (1u << 9);  //digitalWrite(RA_STP, HIGH);
-    PIOC->PIO_CODR = (1u << 9);  //digitalWrite(RA_STP, LOW);
-    RA_microSteps -= RA_mode_steps;
-  }
+  switch (xPos) {
+    case 1:
+      setmStepsMode("R", 1);
+      digitalWrite(RA_DIR, STP_BACK);
+      step_RA();
+      RA_microSteps += RA_mode_steps;
+      break;
+    case 2:
+      setmStepsMode("R", 4);
+      digitalWrite(RA_DIR, STP_BACK);
+      step_RA();
+      RA_microSteps += RA_mode_steps;
+      break;
+    case 3:
+      setmStepsMode("R", 16);
+      digitalWrite(RA_DIR, STP_BACK);
+      step_RA();
+      RA_microSteps += RA_mode_steps;
+      break;
 
-  if ((yP >= 0) && (yP <= 150)) {
-    setmStepsMode("D", 1);
-    digitalWrite(DEC_DIR, STP_BACK);
-    PIOD->PIO_SODR = (1u << 0);  //digitalWrite(DEC_STP, HIGH);
-    PIOD->PIO_CODR = (1u << 0);  //digitalWrite(DEC_STP, LOW);
-    digitalWrite(DEC_STP, LOW);
-    DEC_microSteps += DEC_mode_steps;
-  } else if ((yP > 150) && (yP <= 320)) {
-    setmStepsMode("D", 4);
-    digitalWrite(DEC_DIR, STP_BACK);
-    PIOD->PIO_SODR = (1u << 0);  //digitalWrite(DEC_STP, HIGH);
-    PIOD->PIO_CODR = (1u << 0);  //digitalWrite(DEC_STP, LOW);
-    DEC_microSteps += DEC_mode_steps;
-  } else if ((yP > 320) && (yP <= 470)) {
-    setmStepsMode("D", 8);
-    digitalWrite(DEC_DIR, STP_BACK);
-    PIOD->PIO_SODR = (1u << 0);  //digitalWrite(DEC_STP, HIGH);
-    PIOD->PIO_CODR = (1u << 0);  //digitalWrite(DEC_STP, LOW);
-    DEC_microSteps += DEC_mode_steps;
-  } else if ((yP > 620) && (yP <= 770)) {
-    setmStepsMode("D", 8);
-    digitalWrite(DEC_DIR, STP_FWD);
-    PIOD->PIO_SODR = (1u << 0);  //digitalWrite(DEC_STP, HIGH);
-    PIOD->PIO_CODR = (1u << 0);  //digitalWrite(DEC_STP, LOW);
-    DEC_microSteps -= DEC_mode_steps;
-  } else if ((yP > 770) && (yP <= 870)) {
-    setmStepsMode("D", 4);
-    digitalWrite(DEC_DIR, STP_FWD);
-    PIOD->PIO_SODR = (1u << 0);  //digitalWrite(DEC_STP, HIGH);
-    PIOD->PIO_CODR = (1u << 0);  //digitalWrite(DEC_STP, LOW);
-    DEC_microSteps -= DEC_mode_steps;
-  } else if ((yP > 870) && (yP <= 1023)) {
-    setmStepsMode("D", 1);
-    digitalWrite(DEC_DIR, STP_FWD);
-    PIOD->PIO_SODR = (1u << 0);  //digitalWrite(DEC_STP, HIGH);
-    PIOD->PIO_CODR = (1u << 0);  //digitalWrite(DEC_STP, LOW);
-    DEC_microSteps -= DEC_mode_steps;
+    case 5:
+      setmStepsMode("R", 16);
+      digitalWrite(RA_DIR, STP_FWD);
+      step_RA();
+      RA_microSteps -= RA_mode_steps;
+      break;
+    case 6:
+      setmStepsMode("R", 4);
+      digitalWrite(RA_DIR, STP_FWD);
+      step_RA();
+      RA_microSteps -= RA_mode_steps;
+      break;
+    case 7:
+      setmStepsMode("R", 1);
+      digitalWrite(RA_DIR, STP_FWD);
+      step_RA();
+      RA_microSteps -= RA_mode_steps;
+      break;
   }
-  delayMicroseconds(1000);
+  switch (yPos) {
+    case 1:
+      setmStepsMode("D", 1);
+      digitalWrite(DEC_DIR, STP_BACK);
+      step_DEC();
+      DEC_microSteps += DEC_mode_steps;
+      break;
+    case 2:
+      setmStepsMode("D", 4);
+      digitalWrite(DEC_DIR, STP_BACK);
+      step_DEC();
+      DEC_microSteps += DEC_mode_steps;
+      break;
+    case 3:
+      setmStepsMode("D", 16);
+      digitalWrite(DEC_DIR, STP_BACK);
+      step_DEC();
+      DEC_microSteps += DEC_mode_steps;
+      break;
+
+    case 5:
+      setmStepsMode("D", 16);
+      digitalWrite(DEC_DIR, STP_FWD);
+      step_DEC();
+      DEC_microSteps -= DEC_mode_steps;
+      break;
+    case 6:
+      setmStepsMode("D", 4);
+      digitalWrite(DEC_DIR, STP_FWD);
+      step_DEC();
+      DEC_microSteps -= DEC_mode_steps;
+      break;
+    case 7:
+      setmStepsMode("D", 1);
+      digitalWrite(DEC_DIR, STP_FWD);
+      step_DEC();
+      DEC_microSteps -= DEC_mode_steps;
+      break;
+
+  }
+  
+  delayMicroseconds(650);
+  
+  
+  
 }
 
 // Keep the GPS sensor "fed" until we find the data.
 static void smartDelay(unsigned long ms)
 {
   unsigned long start = millis();
-  if (IS_SOUND_ON) {
+  if (IS_SOUND_ON)
+  {
     SoundOn(note_c, 8);
   }
   do
@@ -635,10 +809,10 @@ static void smartDelay(unsigned long ms)
   } while (millis() - start < ms);
 }
 
-void setmStepsMode(char* P, int mod) {
+void setmStepsMode(char *P, int mod)
+{
   // P means the axis: RA or DEC; mod means MicroSteppping mode: x32, x16, x8....
   // setmStepsMode(R,2) - means RA with 1/2 steps; setmStepsMode(R,4) - means RA with 1/4 steps
-
 
   // PINS Mapping for fast switching
   // DEC_M2 - Pin 31 UP   - PA7  - PIOA->PIO_SODR = (1u << 7) ;
@@ -647,7 +821,7 @@ void setmStepsMode(char* P, int mod) {
   // RA_M0  - Pin 47 UP   - PC12 - PIOC->PIO_SODR = (1u << 12);
   // RA_M1  - Pin 49 UP   - PC14 - PIOC->PIO_SODR = (1u << 14);
   // RA_M2  - Pin 51 UP   - PC16 - PIOC->PIO_SODR = (1u << 16);
-  
+
   // DEC_M2 - Pin 31 UP   - PA7  - PIOA->PIO_CODR = (1u << 7) ;
   // DEC_M1 - Pin 33 UP   - PC1  - PIOC->PIO_CODR = (1u << 1) ;
   // DEC_M0 - Pin 35 UP   - PC3  - PIOC->PIO_CODR = (1u << 3) ;
@@ -662,7 +836,7 @@ void setmStepsMode(char* P, int mod) {
   {
     // Set RA modes
     if (mod == 1)
-    {                     // Full Step
+    { // Full Step
       //digitalWrite(RA_MODE0, LOW);
       //digitalWrite(RA_MODE1, LOW);
       //digitalWrite(RA_MODE2, LOW);
@@ -670,7 +844,8 @@ void setmStepsMode(char* P, int mod) {
       PIOC->PIO_CODR = (1u << 14);
       PIOC->PIO_CODR = (1u << 16);
     }
-    if (mod == 2) {                     // 1/2 Step
+    if (mod == 2)
+    { // 1/2 Step
       //digitalWrite(RA_MODE0, HIGH);
       //digitalWrite(RA_MODE1, LOW);
       //digitalWrite(RA_MODE2, LOW);
@@ -678,7 +853,8 @@ void setmStepsMode(char* P, int mod) {
       PIOC->PIO_CODR = (1u << 14);
       PIOC->PIO_CODR = (1u << 16);
     }
-    if (mod == 4) {                     // 1/4 Step
+    if (mod == 4)
+    { // 1/4 Step
       //digitalWrite(RA_MODE0, LOW);
       //digitalWrite(RA_MODE1, HIGH);
       //digitalWrite(RA_MODE2, LOW);
@@ -686,7 +862,8 @@ void setmStepsMode(char* P, int mod) {
       PIOC->PIO_SODR = (1u << 14);
       PIOC->PIO_CODR = (1u << 16);
     }
-    if (mod == 8) {                     // 1/8 Step
+    if (mod == 8)
+    { // 1/8 Step
       //digitalWrite(RA_MODE0, HIGH);
       //digitalWrite(RA_MODE1, HIGH);
       //digitalWrite(RA_MODE2, LOW);
@@ -694,17 +871,19 @@ void setmStepsMode(char* P, int mod) {
       PIOC->PIO_SODR = (1u << 14);
       PIOC->PIO_CODR = (1u << 16);
     }
-    if (mod == 16) {                     // 1/16 Step
+    if (mod == 16)
+    { // 1/16 Step
       //digitalWrite(RA_MODE0, LOW);
       //digitalWrite(RA_MODE1, LOW);
       //digitalWrite(RA_MODE2, HIGH);
       // PIOC->PIO_CODR = (1u << 12);
       // PIOC->PIO_CODR = (1u << 14);
-      PIOC->PIO_SODR = (1u << 12);  //HIGH
+      PIOC->PIO_SODR = (1u << 12); //HIGH
       PIOC->PIO_SODR = (1u << 14); //HIGH
       PIOC->PIO_SODR = (1u << 16); //HIGH
     }
-    if (mod == 32) {                     // 1/32 Step
+    if (mod == 32)
+    { // 1/32 Step
       //digitalWrite(RA_MODE0, HIGH);
       //digitalWrite(RA_MODE1, LOW);
       //digitalWrite(RA_MODE2, HIGH);
@@ -714,8 +893,10 @@ void setmStepsMode(char* P, int mod) {
     }
     RA_mode_steps = MICROSteps / mod;
   }
-  if (P == "D") { // Set RA modes
-    if (mod == 1) {                     // Full Step
+  if (P == "D")
+  { // Set RA modes
+    if (mod == 1)
+    { // Full Step
       //digitalWrite(DEC_MODE0, LOW);
       //digitalWrite(DEC_MODE1, LOW);
       //digitalWrite(DEC_MODE2, LOW);
@@ -723,7 +904,8 @@ void setmStepsMode(char* P, int mod) {
       PIOC->PIO_CODR = (1u << 1);
       PIOA->PIO_CODR = (1u << 7);
     }
-    if (mod == 2) {                     // 1/2 Step
+    if (mod == 2)
+    { // 1/2 Step
       //digitalWrite(DEC_MODE0, HIGH);
       //digitalWrite(DEC_MODE1, LOW);
       //digitalWrite(DEC_MODE2, LOW);
@@ -731,7 +913,8 @@ void setmStepsMode(char* P, int mod) {
       PIOC->PIO_CODR = (1u << 1);
       PIOA->PIO_CODR = (1u << 7);
     }
-    if (mod == 4) {                     // 1/4 Step
+    if (mod == 4)
+    { // 1/4 Step
       //digitalWrite(DEC_MODE0, LOW);
       //digitalWrite(DEC_MODE1, HIGH);
       //digitalWrite(DEC_MODE2, LOW);
@@ -739,7 +922,8 @@ void setmStepsMode(char* P, int mod) {
       PIOC->PIO_SODR = (1u << 1);
       PIOA->PIO_CODR = (1u << 7);
     }
-    if (mod == 8) {                     // 1/8 Step
+    if (mod == 8)
+    { // 1/8 Step
       //digitalWrite(DEC_MODE0, HIGH);
       //digitalWrite(DEC_MODE1, HIGH);
       //digitalWrite(DEC_MODE2, LOW);
@@ -747,7 +931,8 @@ void setmStepsMode(char* P, int mod) {
       PIOC->PIO_SODR = (1u << 1);
       PIOA->PIO_CODR = (1u << 7);
     }
-    if (mod == 16) {                     // 1/16 Step
+    if (mod == 16)
+    { // 1/16 Step
       //digitalWrite(DEC_MODE0, LOW);
       //digitalWrite(DEC_MODE1, LOW);
       //digitalWrite(DEC_MODE2, HIGH);
@@ -757,7 +942,8 @@ void setmStepsMode(char* P, int mod) {
       PIOC->PIO_SODR = (1u << 1); //HIGH
       PIOA->PIO_SODR = (1u << 7); //HIGH
     }
-    if (mod == 32) {                     // 1/32 Step
+    if (mod == 32)
+    { // 1/32 Step
       //digitalWrite(DEC_MODE0, HIGH);
       //digitalWrite(DEC_MODE1, LOW);
       //digitalWrite(DEC_MODE2, HIGH);
@@ -767,13 +953,15 @@ void setmStepsMode(char* P, int mod) {
     }
     DEC_mode_steps = MICROSteps / mod;
   }
-  delayMicroseconds(5);   // Makes sure the DRV8825 can follow
+  delayMicroseconds(5); // Makes sure the DRV8825 can follow
 }
 
-void SoundOn(int note, int duration) {
+void SoundOn(int note, int duration)
+{
   duration *= 10000;
   long elapsed_time = 0;
-  while (elapsed_time < duration) {
+  while (elapsed_time < duration)
+  {
     digitalWrite(speakerOut, HIGH);
     delayMicroseconds(note / 2);
     // DOWN
@@ -784,10 +972,12 @@ void SoundOn(int note, int duration) {
   }
 }
 
-void UpdateObservedObjects() {
+void UpdateObservedObjects()
+{
   // Write down the Observed objects information: --- USED in the STATS screen and sent to BT as status.
-  int Delta_Time = (((String(rtc.getTimeStr()).substring(0, 2).toInt()) * 60)  + (String(rtc.getTimeStr()).substring(3, 5).toInt())) - ((Prev_Obj_Start.substring(0, 2).toInt() * 60) + Prev_Obj_Start.substring(3).toInt());
-  if (Delta_Time < 0) {
+  int Delta_Time = (((String(rtc.getTimeStr()).substring(0, 2).toInt()) * 60) + (String(rtc.getTimeStr()).substring(3, 5).toInt())) - ((Prev_Obj_Start.substring(0, 2).toInt() * 60) + Prev_Obj_Start.substring(3).toInt());
+  if (Delta_Time < 0)
+  {
     Delta_Time += 1440;
   }
   ObservedObjects[Observed_Obj_Count - 1] += ";" + String(Delta_Time);
@@ -796,7 +986,8 @@ void UpdateObservedObjects() {
   Prev_Obj_Start = String(rtc.getTimeStr()).substring(0, 5);
 }
 
-void Current_RA_DEC() {
+void Current_RA_DEC()
+{
   //curr_RA_H, curr_RA_M, curr_RA_S, curr_DEC_D, curr_DEC_M, curr_DEC_S;
   // curr_RA_lz, curr_DEC_lz, curr_HA_lz;
   // DEC
@@ -805,14 +996,20 @@ void Current_RA_DEC() {
   float tmp_dec = (float(DEC_90) - float(abs(DEC_microSteps))) / float(DEC_D_CONST);
   tmp_dec -= delta_a_DEC;
   int sDEC_tel = 0;
-  if (tmp_dec < 0) {
+  if (tmp_dec < 0)
+  {
     sDEC_tel = 45;
-  } else {
+  }
+  else
+  {
     sDEC_tel = 43;
   }
-  if (tmp_dec > 0) {
+  if (tmp_dec > 0)
+  {
     curr_DEC_D = floor(tmp_dec);
-  } else {
+  }
+  else
+  {
     curr_DEC_D = ceil(tmp_dec);
   }
   curr_DEC_M = (tmp_dec - floor(curr_DEC_D)) * 60;
@@ -824,7 +1021,8 @@ void Current_RA_DEC() {
   // To correct for the Star Alignment
   double tmp_ha = double(RA_microSteps) / double(HA_H_CONST);
   tmp_ha -= delta_a_RA;
-  if (DEC_microSteps > 0) {
+  if (DEC_microSteps > 0)
+  {
     tmp_ha += 180;
   }
   tmp_ha /= 15;
@@ -839,7 +1037,8 @@ void Current_RA_DEC() {
 
   // RIGHT ASC.
   double tmp_ra = LST - tmp_ha;
-  if (LST < tmp_ha) {
+  if (LST < tmp_ha)
+  {
     tmp_ra += 24;
   }
 
@@ -852,41 +1051,55 @@ void Current_RA_DEC() {
   sprintf(curr_RA_lz, "%02d:%02d:%02d", int(curr_RA_H), int(curr_RA_M), int(curr_RA_S));
 }
 
-void DrawButton(int X, int Y, int Width, int Height, String Caption, int16_t BodyColor, int16_t BorderColor, int16_t TextColor, int tSize) {
+void DrawButton(int X, int Y, int Width, int Height, String Caption, int16_t BodyColor, int16_t BorderColor, int16_t TextColor, int tSize)
+{
   //  TYPE: 0:Solid color, no Frame; 1: Frame Only button; 2: Solid color and Frame button;
 
-  if ((BodyColor != 0) && (BorderColor == 0)) {
+  if ((BodyColor != 0) && (BorderColor == 0))
+  {
     // Button Type = 0 ... Solid color, no Frame
     tft.fillRect2(X, Y, Width, Height, BodyColor);
-  } else if ((BodyColor == 0) && (BorderColor != 0)) {
+  }
+  else if ((BodyColor == 0) && (BorderColor != 0))
+  {
     // Button Type = 1 ... Frame Only button
     tft.drawRect(X, Y, Width, Height, BorderColor);
     tft.fillRect2(X + 1, Y + 1, Width - 2, Height - 2, BLACK);
-  } else if ((BodyColor != 0) && (BorderColor != 0)) {
+  }
+  else if ((BodyColor != 0) && (BorderColor != 0))
+  {
     // Button Type = 1 ... Frame Only button
     tft.drawRect(X, Y, Width, Height, BorderColor);
     tft.fillRect2(X + 1, Y + 1, Width - 2, Height - 2, BodyColor);
-  } else {
+  }
+  else
+  {
     // Will not Draw Button and will return to code!
     return;
   }
 
   float TX = 0;
   float TY = 0;
-  if (tSize == 2) {      // 10 x 14 px. (W x H)
+  if (tSize == 2)
+  { // 10 x 14 px. (W x H)
     TX = (X + 1 + Width / 2) - (Caption.length() * 6);
     TY = Y + Height / 2 - 5;
-  } else if (tSize == 1) { // 5 x 7 px. (W x H)
+  }
+  else if (tSize == 1)
+  { // 5 x 7 px. (W x H)
     TX = (X + 1 + Width / 2) - (Caption.length() * 3);
-    TY = Y + Height / 2 - 3 ;
-  } else if (tSize == 3) { // 15 x 21 px. (W x H)
+    TY = Y + Height / 2 - 3;
+  }
+  else if (tSize == 3)
+  { // 15 x 21 px. (W x H)
     TX = (X + 1 + Width / 2) - (Caption.length() * 8);
     TY = Y + Height / 2 - 10;
   }
   tft.setCursor((int)TX, (int)TY);
   tft.setTextSize(tSize);
   tft.setTextColor(TextColor);
-  if (Caption == "+") {
+  if (Caption == "+")
+  {
     TX -= 5;
     tft.drawLine((int)TX + 10, (int)TY - 5, (int)TX + 10, (int)TY - 5, TextColor);
     tft.drawLine((int)TX + 8, (int)TY - 4, (int)TX + 12, (int)TY - 4, TextColor);
@@ -905,7 +1118,9 @@ void DrawButton(int X, int Y, int Width, int Height, String Caption, int16_t Bod
     tft.drawLine((int)TX + 6, (int)TY + 13, (int)TX + 14, (int)TY + 13, TextColor);
     tft.drawLine((int)TX + 8, (int)TY + 14, (int)TX + 12, (int)TY + 14, TextColor);
     tft.drawLine((int)TX + 10, (int)TY + 15, (int)TX + 10, (int)TY + 15, TextColor);
-  } else {
+  }
+  else
+  {
     tft.println(Caption);
   }
 }
@@ -934,7 +1149,7 @@ void DrawButton(int X, int Y, int Width, int Height, String Caption, int16_t Bod
 //     #ifdef serial_debug
 //       Serial.println("file not found on the SD card");
 //     #endif
-    
+
 //     return;
 //   }
 //   // Parse BMP header
@@ -959,7 +1174,7 @@ void DrawButton(int X, int Y, int Width, int Height, String Caption, int16_t Bod
 //     bmpWidth  = read32(bmpFile);
 //     bmpHeight = read32(bmpFile);
 //     if (read16(bmpFile) == 1) // # planes -- must be '1'
-//     { 
+//     {
 //       bmpDepth = read16(bmpFile); // bits per pixel
 
 //       #ifdef serial_debug
@@ -969,7 +1184,7 @@ void DrawButton(int X, int Y, int Width, int Height, String Caption, int16_t Bod
 //       #endif
 
 //       if ((bmpDepth == 24) && (read32(bmpFile) == 0)) // 0 = uncompressed
-//       { 
+//       {
 //         goodBmp = true; // Supported BMP format -- proceed!
 //         // BMP rows are padded (if needed) to 4-byte boundary
 //         rowSize = (bmpWidth * 3 + 3) & ~3;
@@ -1028,125 +1243,142 @@ void DrawButton(int X, int Y, int Width, int Height, String Caption, int16_t Bod
 //   bmpFile.close();
 // }
 
-void bmpDraw(char *filename, int x, int y) {
+void bmpDraw(char *filename, int x, int y)
+{
 
-  File     bmpFile;
-  int      bmpWidth, bmpHeight;   // W+H in pixels
-  uint8_t  bmpDepth;              // Bit depth (currently must be 24)
-  uint32_t bmpImageoffset;        // Start of image data in file
-  uint32_t bmpDibHeader;          // Start of image data in file
-  uint32_t bmpSize;               // Start of image data in file
-  uint32_t rowSize;               // Not always = bmpWidth; may have padding
-  uint8_t  sdbuffer[3*BUFFPIXEL]; // pixel in buffer (R+G+B per pixel)
-  uint16_t lcdbuffer[BUFFPIXEL];  // pixel out buffer (16-bit per pixel)
-  uint8_t  buffidx = sizeof(sdbuffer); // Current position in sdbuffer
-  boolean  goodBmp = false;       // Set to true on valid header parse
-  boolean  flip    = true;        // BMP is stored bottom-to-top
-  int      w, h, row, col;
-  uint8_t  r, g, b;
+  File bmpFile;
+  int bmpWidth, bmpHeight;            // W+H in pixels
+  uint8_t bmpDepth;                   // Bit depth (currently must be 24)
+  uint32_t bmpImageoffset;            // Start of image data in file
+  uint32_t bmpDibHeader;              // Start of image data in file
+  uint32_t bmpSize;                   // Start of image data in file
+  uint32_t rowSize;                   // Not always = bmpWidth; may have padding
+  uint8_t sdbuffer[3 * BUFFPIXEL];    // pixel in buffer (R+G+B per pixel)
+  uint16_t lcdbuffer[BUFFPIXEL];      // pixel out buffer (16-bit per pixel)
+  uint8_t buffidx = sizeof(sdbuffer); // Current position in sdbuffer
+  boolean goodBmp = false;            // Set to true on valid header parse
+  boolean flip = true;                // BMP is stored bottom-to-top
+  int w, h, row, col;
+  uint8_t r, g, b;
   uint32_t pos = 0, startTime = millis();
-  uint8_t  lcdidx = 0;
-  boolean  first = true;
+  uint8_t lcdidx = 0;
+  boolean first = true;
 
-  if((x >= tft.width()) || (y >= tft.height())) return;
+  if ((x >= tft.width()) || (y >= tft.height()))
+    return;
 
-  #ifdef serial_debug
-    Serial.println();
-    Serial.println("Loading image '");
-    Serial.print(filename);
-    Serial.println('\'');
-  #endif
+#ifdef serial_debug
+  Serial.println();
+  Serial.println("Loading image '");
+  Serial.print(filename);
+  Serial.println('\'');
+#endif
   // Open requested file on SD card
-  if ((bmpFile = SD.open(filename)) == NULL) {
-    #ifdef serial_debug
-      Serial.println("File not found");
-    #endif
+  if ((bmpFile = SD.open(filename)) == NULL)
+  {
+#ifdef serial_debug
+    Serial.println("File not found");
+#endif
     return;
   }
 
   // Parse BMP header
-  if(read16(bmpFile) == 0x4D42) { // BMP signature
-    
+  if (read16(bmpFile) == 0x4D42)
+  { // BMP signature
+
     // read size
     bmpSize = read32(bmpFile);
-    #ifdef serial_debug
-      Serial.println("File size: "); Serial.println(bmpSize);
-    #endif  
-    
+#ifdef serial_debug
+    Serial.println("File size: ");
+    Serial.println(bmpSize);
+#endif
+
     (void)read32(bmpFile); // Read & ignore creator bytes
-    
+
     // read offset
     bmpImageoffset = read32(bmpFile); // Start of image data
-    #ifdef serial_debug
-      Serial.println("Image Offset: "); Serial.println(bmpImageoffset, DEC);
-    #endif
-    
+#ifdef serial_debug
+    Serial.println("Image Offset: ");
+    Serial.println(bmpImageoffset, DEC);
+#endif
+
     // Read DIB header
     bmpDibHeader = read32(bmpFile); // Start of image data
-    #ifdef serial_debug
-      Serial.println("Header size: "); Serial.println(bmpDibHeader);
-    #endif
+#ifdef serial_debug
+    Serial.println("Header size: ");
+    Serial.println(bmpDibHeader);
+#endif
 
-    
-    bmpWidth  = read32(bmpFile);
+    bmpWidth = read32(bmpFile);
     bmpHeight = read32(bmpFile);
-    if(read16(bmpFile) == 1) { // # planes -- must be '1'
+    if (read16(bmpFile) == 1)
+    {                             // # planes -- must be '1'
       bmpDepth = read16(bmpFile); // bits per pixel
-      #ifdef serial_debug
-        Serial.println("Bit Depth: "); Serial.println(bmpDepth);
-      #endif
-      if((bmpDepth == 24) && (read32(bmpFile) == 0)) { // 0 = uncompressed
+#ifdef serial_debug
+      Serial.println("Bit Depth: ");
+      Serial.println(bmpDepth);
+#endif
+      if ((bmpDepth == 24) && (read32(bmpFile) == 0))
+      { // 0 = uncompressed
 
         goodBmp = true; // Supported BMP format -- proceed!
-        #ifdef serial_debug
-          Serial.println("Image size: ");
-          Serial.print(bmpWidth);
-          Serial.print('x');
-          Serial.println(bmpHeight);
-        #endif
+#ifdef serial_debug
+        Serial.println("Image size: ");
+        Serial.print(bmpWidth);
+        Serial.print('x');
+        Serial.println(bmpHeight);
+#endif
         // BMP rows are padded (if needed) to 4-byte boundary
         rowSize = (bmpWidth * 3 + 3) & ~3;
 
         // If bmpHeight is negative, image is in top-down order.
         // This is not canon but has been observed in the wild.
-        if(bmpHeight < 0) {
+        if (bmpHeight < 0)
+        {
           bmpHeight = -bmpHeight;
-          flip      = false;
+          flip = false;
         }
 
         // Crop area to be loaded
         w = bmpWidth;
         h = bmpHeight;
-        if((x+w-1) >= tft.width())  w = tft.width()  - x;
-        if((y+h-1) >= tft.height()) h = tft.height() - y;
+        if ((x + w - 1) >= tft.width())
+          w = tft.width() - x;
+        if ((y + h - 1) >= tft.height())
+          h = tft.height() - y;
 
         // Set TFT address window to clipped image bounds
-        tft.setAddrWindow(x, y, x+w-1, y+h-1);
+        tft.setAddrWindow(x, y, x + w - 1, y + h - 1);
 
-        for (row=0; row<h; row++) { // For each scanline...
+        for (row = 0; row < h; row++)
+        { // For each scanline...
           // Seek to start of scan line.  It might seem labor-
           // intensive to be doing this on every line, but this
           // method covers a lot of gritty details like cropping
           // and scanline padding.  Also, the seek only takes
           // place if the file position actually needs to change
           // (avoids a lot of cluster math in SD library).
-          if(flip) // Bitmap is stored bottom-to-top order (normal BMP)
+          if (flip) // Bitmap is stored bottom-to-top order (normal BMP)
             pos = bmpImageoffset + (bmpHeight - 1 - row) * rowSize;
-          else     // Bitmap is stored top-to-bottom
+          else // Bitmap is stored top-to-bottom
             pos = bmpImageoffset + row * rowSize;
-          if(bmpFile.position() != pos) { // Need seek?
+          if (bmpFile.position() != pos)
+          { // Need seek?
             bmpFile.seek(pos);
             buffidx = sizeof(sdbuffer); // Force buffer reload
           }
 
-          for (col=0; col<w; col++) { // For each column...
+          for (col = 0; col < w; col++)
+          { // For each column...
             // Time to read more pixel data?
-            if (buffidx >= sizeof(sdbuffer)) { // Indeed
+            if (buffidx >= sizeof(sdbuffer))
+            { // Indeed
               // Push LCD buffer to the display first
-              if(lcdidx > 0) {
+              if (lcdidx > 0)
+              {
                 tft.pushColors(lcdbuffer, lcdidx, first);
                 lcdidx = 0;
-                first  = false;
+                first = false;
               }
               bmpFile.read(sdbuffer, sizeof(sdbuffer));
               buffidx = 0; // Set index to beginning
@@ -1156,41 +1388,44 @@ void bmpDraw(char *filename, int x, int y) {
             b = sdbuffer[buffidx++];
             g = sdbuffer[buffidx++];
             r = sdbuffer[buffidx++];
-            lcdbuffer[lcdidx++] = tft.color565(r,g,b);
+            lcdbuffer[lcdidx++] = tft.color565(r, g, b);
           } // end pixel
-        } // end scanline
+        }   // end scanline
         // Write any remaining data to LCD
-        if(lcdidx > 0) {
+        if (lcdidx > 0)
+        {
           tft.pushColors(lcdbuffer, lcdidx, first);
-        } 
-        #ifdef serial_debug
-          Serial.println(("Loaded in "));
-          Serial.print(millis() - startTime);
-          Serial.println(" ms");
-        #endif
+        }
+#ifdef serial_debug
+        Serial.println(("Loaded in "));
+        Serial.print(millis() - startTime);
+        Serial.println(" ms");
+#endif
       } // end goodBmp
     }
   }
 
   bmpFile.close();
-  #ifdef serial_debug
-    if(!goodBmp) Serial.println("BMP format not recognized.");
-  #endif
+#ifdef serial_debug
+  if (!goodBmp)
+    Serial.println("BMP format not recognized.");
+#endif
 }
-
 
 // These read 16- and 32-bit types from the SD card file.
 // BMP data is stored little-endian, Arduino is little-endian too.
 // May need to reverse subscript order if porting elsewhere.
 
-uint16_t read16(File &f) {
+uint16_t read16(File &f)
+{
   uint16_t result;
   ((uint8_t *)&result)[0] = f.read(); // LSB
   ((uint8_t *)&result)[1] = f.read(); // MSB
   return result;
 }
 
-uint32_t read32(File &f) {
+uint32_t read32(File &f)
+{
   uint32_t result;
   ((uint8_t *)&result)[0] = f.read(); // LSB
   ((uint8_t *)&result)[1] = f.read();
@@ -1212,58 +1447,68 @@ bool isSummerTime() //in Italy: Summer time ends the last sunday of october and 
 {
   bool summer_time = false;
 
-  #ifdef serial_debug
-    Serial.print(day());
-    Serial.print("/");
-    Serial.print(month());
-    Serial.print("/");
-    Serial.print(year());
-    Serial.print("  weekday: ");
-    Serial.println(weekday());
-    Serial.print(hour());
-    Serial.print(":");
-    Serial.print(minute());
-  #endif
+#ifdef serial_debug
+  Serial.print(day());
+  Serial.print("/");
+  Serial.print(month());
+  Serial.print("/");
+  Serial.print(year());
+  Serial.print("  weekday: ");
+  Serial.println(weekday());
+  Serial.print(hour());
+  Serial.print(":");
+  Serial.print(minute());
+#endif
 
   // If I'm in October
-    if (month() == 10)
+  if (month() == 10)
+  {
+    // If it's Sunday
+    if (weekday() == 1)
     {
-        // If it's Sunday
-        if (weekday() == 1)
-        {
-            if (day() + 7 > 31 && hour() >= 3) summer_time = false;
-            else summer_time = true;
-        }
-        else
-        {
-            // If last sunday has passed
-            if ((day() + 7 - (weekday() - 1)) > 31) summer_time = false;
-            else  summer_time = true;
-        }
+      if (day() + 7 > 31 && hour() >= 3)
+        summer_time = false;
+      else
+        summer_time = true;
     }
-    // If I'm in March
-    else if (month() == 3)
+    else
     {
-        // Se è domenica
-        if (weekday() == 1)
-        {
-            // Se è l'ultima domenica
-            if ((day() + 7) > 31 && hour() >= 2) summer_time = true;
-            else summer_time = false;
-        }
-        else
-        {
-            // Se non è domenica, ma l'ultima è già passata
-            if ((day() + 7 - (weekday() - 1)) > 31) summer_time = true;
-            else  summer_time = false;
-        }
+      // If last sunday has passed
+      if ((day() + 7 - (weekday() - 1)) > 31)
+        summer_time = false;
+      else
+        summer_time = true;
     }
-    // Se sono nel periodo dell'ora legale
-    else if (month() >= 4 && month() <= 9) summer_time = true;
-    // Se sono nel periodo dell'ora solare
-    else if ((month() >= 1 && month() <= 2) || (month() >= 11 && month() <= 12)) summer_time = false;
-    
-    return summer_time; 
+  }
+  // If I'm in March
+  else if (month() == 3)
+  {
+    // Se è domenica
+    if (weekday() == 1)
+    {
+      // Se è l'ultima domenica
+      if ((day() + 7) > 31 && hour() >= 2)
+        summer_time = true;
+      else
+        summer_time = false;
+    }
+    else
+    {
+      // Se non è domenica, ma l'ultima è già passata
+      if ((day() + 7 - (weekday() - 1)) > 31)
+        summer_time = true;
+      else
+        summer_time = false;
+    }
+  }
+  // Se sono nel periodo dell'ora legale
+  else if (month() >= 4 && month() <= 9)
+    summer_time = true;
+  // Se sono nel periodo dell'ora solare
+  else if ((month() >= 1 && month() <= 2) || (month() >= 11 && month() <= 12))
+    summer_time = false;
+
+  return summer_time;
 }
 
 // Performs ~310.000 readings to find the mean value of the joypad (error: 3*10^-4 % )
@@ -1279,9 +1524,9 @@ void calibrateJoypad(int *x_cal, int *y_cal)
   int c = 3;
 
   tft.print("3.. ");
-  while(millis() < now_t + 300)
+  while (millis() < now_t + 300)
   {
-    if(millis() > prev_t + 100)
+    if (millis() > prev_t + 100)
     {
       c--;
       tft.print(c);
@@ -1296,12 +1541,12 @@ void calibrateJoypad(int *x_cal, int *y_cal)
   tft.setTextColor(GREEN);
   tft.print("done!");
   tft.setTextColor(l_text);
-  #ifdef serial_debug
-    Serial.print("x_cal: ");
-    Serial.println(*x_cal);
-    Serial.print("y_cal: ");
-    Serial.println(*y_cal);
-  #endif
+#ifdef serial_debug
+  Serial.print("x_cal: ");
+  Serial.println(*x_cal);
+  Serial.print("y_cal: ");
+  Serial.println(*y_cal);
+#endif
 }
 
 void storeOptions_SD()
@@ -1311,20 +1556,20 @@ void storeOptions_SD()
 
   if (dataFile)
   {
-    String options =                       "(" +
-      (String)TFT_Brightness             + ";" +
-              TFT_Time                   + ";" + 
-      (String)Tracking_type              + ";" + 
-      (String)IS_MERIDIAN_FLIP_AUTOMATIC + ";" + 
-              Fan1_State                 + ";" +
-              Fan2_State                 + ";" +
-      (String)IS_SOUND_ON                + ";" +
-      (String)IS_STEPPERS_ON             + ";" +
-      (String)IS_NIGHTMODE               + ";" +
-      (String)clx                        + ";" +
-      (String)cty                        + ";" +
-      (String)slope_x                    + ";" +
-      (String)slope_y                    + ")" ;
+    String options = "(" +
+                     (String)TFT_Brightness + ";" +
+                     TFT_Time + ";" +
+                     (String)Tracking_type + ";" +
+                     (String)IS_MERIDIAN_FLIP_AUTOMATIC + ";" +
+                     Fan1_State + ";" +
+                     Fan2_State + ";" +
+                     (String)IS_SOUND_ON + ";" +
+                     (String)IS_STEPPERS_ON + ";" +
+                     (String)IS_NIGHTMODE + ";" +
+                     (String)clx + ";" +
+                     (String)cty + ";" +
+                     (String)slope_x + ";" +
+                     (String)slope_y + ")";
 
     dataFile.print(options);
     dataFile.close();
@@ -1340,11 +1585,11 @@ void loadOptions_SD()
     char optionsBuffer[100] = {""};
     dataFile.read(optionsBuffer, 100);
     String receivedString = optionsBuffer;
-    
-    #ifdef serial_debug  
-      Serial.print("options:");
-      Serial.println(optionsBuffer);
-    #endif
+
+#ifdef serial_debug
+    Serial.print("options:");
+    Serial.println(optionsBuffer);
+#endif
 
     int iniPac = receivedString.indexOf('(');
     int endPac = receivedString.indexOf(')');
@@ -1355,85 +1600,91 @@ void loadOptions_SD()
       packetIn = packetIn.substring(1, endPac); //tolgo le parentesi
       String valoriIn[13] = {""};
 
-      #ifdef serial_debug
-        Serial.print("packetIn:");
-        Serial.println(packetIn);
-      #endif
+#ifdef serial_debug
+      Serial.print("packetIn:");
+      Serial.println(packetIn);
+#endif
 
       // for (int i=0; i<sizeof(valoriIn)/sizeof(valoriIn[0])-1; i++)  //genero le sottostringhe
-      for (int i=0; i<13; i++)  //genero le sottostringhe
+      for (int i = 0; i < 13; i++) //genero le sottostringhe
       {
-        int endVal  = packetIn.indexOf(";");
+        int endVal = packetIn.indexOf(";");
         valoriIn[i] = packetIn.substring(0, endVal);
-        #ifdef serial_debug
-          Serial.print("valoriIn[");
-          Serial.print(i);
-          Serial.print("] :");
-          Serial.println(valoriIn[i]);
-        #endif
-        packetIn    = packetIn.substring(endVal+1, packetIn.length());
+#ifdef serial_debug
+        Serial.print("valoriIn[");
+        Serial.print(i);
+        Serial.print("] :");
+        Serial.println(valoriIn[i]);
+#endif
+        packetIn = packetIn.substring(endVal + 1, packetIn.length());
       }
-      valoriIn[sizeof(valoriIn)/sizeof(valoriIn[0])-1] = packetIn;
+      valoriIn[sizeof(valoriIn) / sizeof(valoriIn[0]) - 1] = packetIn;
 
       //aggiorno:
-      TFT_Brightness             = valoriIn[0].toInt();          
-      TFT_Time                   = valoriIn[1];
-      Tracking_type              = valoriIn[2].toInt();
-      IS_MERIDIAN_FLIP_AUTOMATIC = valoriIn[3].toInt(); 
-      Fan1_State                 = valoriIn[4];
-      Fan2_State                 = valoriIn[5];
-      IS_SOUND_ON                = valoriIn[6].toInt();
-      IS_STEPPERS_ON             = valoriIn[7].toInt();
-      
-      IS_NIGHTMODE               = valoriIn[8].toInt();
-      clx                        = valoriIn[9].toDouble();
-      cty                        = valoriIn[10].toDouble();
-      slope_x                    = valoriIn[11].toDouble();
-      slope_y                    = valoriIn[12].toDouble();
+      TFT_Brightness = valoriIn[0].toInt();
+      TFT_Time = valoriIn[1];
+      Tracking_type = valoriIn[2].toInt();
+      IS_MERIDIAN_FLIP_AUTOMATIC = valoriIn[3].toInt();
+      Fan1_State = valoriIn[4];
+      Fan2_State = valoriIn[5];
+      IS_SOUND_ON = valoriIn[6].toInt();
+      IS_STEPPERS_ON = valoriIn[7].toInt();
 
-
+      IS_NIGHTMODE = valoriIn[8].toInt();
+      clx = valoriIn[9].toDouble();
+      cty = valoriIn[10].toDouble();
+      slope_x = valoriIn[11].toDouble();
+      slope_y = valoriIn[12].toDouble();
 
       analogWrite(TFTBright, TFT_Brightness);
 
-      if (Tracking_type == 0) Tracking_Mode = "Lunar";
-      else if (Tracking_type == 2) Tracking_Mode = "Solar";
+      if (Tracking_type == 0)
+        Tracking_Mode = "Lunar";
+      else if (Tracking_type == 2)
+        Tracking_Mode = "Solar";
       else
       {
         Tracking_type = 1;
         Tracking_Mode = "Celest";
       }
 
-      if      (TFT_Time.equals("30 s"  )) TFT_timeout = 30000;
-      else if (TFT_Time.equals("60 s"  )) TFT_timeout = 60000;
-      else if (TFT_Time.equals("2 min" )) TFT_timeout = 120000;
-      else if (TFT_Time.equals("5 min" )) TFT_timeout = 300000;
-      else if (TFT_Time.equals("10 min")) TFT_timeout = 600000;
+      if (TFT_Time.equals("30 s"))
+        TFT_timeout = 30000;
+      else if (TFT_Time.equals("60 s"))
+        TFT_timeout = 60000;
+      else if (TFT_Time.equals("2 min"))
+        TFT_timeout = 120000;
+      else if (TFT_Time.equals("5 min"))
+        TFT_timeout = 300000;
+      else if (TFT_Time.equals("10 min"))
+        TFT_timeout = 600000;
       else
       {
         TFT_Time = "AL-ON";
         TFT_timeout = 0;
       }
 
-      #ifdef serial_debug
-        Serial.print("TFT_timeout = ");
-        Serial.println(TFT_timeout);
-      #endif
+#ifdef serial_debug
+      Serial.print("TFT_timeout = ");
+      Serial.println(TFT_timeout);
+#endif
 
-      if (IS_MERIDIAN_FLIP_AUTOMATIC) Mer_Flip_State = "AUTO";
+      if (IS_MERIDIAN_FLIP_AUTOMATIC)
+        Mer_Flip_State = "AUTO";
       else
       {
         IS_MERIDIAN_FLIP_AUTOMATIC = false;
         Mer_Flip_State = "OFF";
       }
 
-      if(Fan1_State.equals("OFF"))
+      if (Fan1_State.equals("OFF"))
         IS_FAN1_ON = false;
       else
       {
         Fan1_State = "ON";
         IS_FAN1_ON = true;
       }
-      if(Fan2_State.equals("OFF"))
+      if (Fan2_State.equals("OFF"))
         IS_FAN2_ON = false;
       else
       {
@@ -1441,32 +1692,30 @@ void loadOptions_SD()
         IS_FAN2_ON = true;
       }
 
-      if(IS_SOUND_ON)
+      if (IS_SOUND_ON)
       {
         Sound_State = "ON";
       }
-      else  
+      else
       {
         IS_SOUND_ON = false;
         Sound_State = "OFF";
-      }   
-                              
-      if(IS_STEPPERS_ON)
+      }
+
+      if (IS_STEPPERS_ON)
         Stepper_State = "ON";
-      else  
+      else
       {
         IS_STEPPERS_ON = false;
         Stepper_State = "OFF";
       }
-      if(IS_NIGHTMODE)
+      if (IS_NIGHTMODE)
         IS_NIGHTMODE = true;
-      else  
+      else
       {
         IS_NIGHTMODE = false;
       }
-
     }
-
 
     dataFile.close();
   }
@@ -1477,9 +1726,9 @@ uint32_t rx[8], ry[8];
 
 void calibrateTFT()
 {
-  #define dispx tft.width()
-  #define dispy tft.height()
-  #define text_y_center = (dispy / 2) - 6
+#define dispx tft.width()
+#define dispy tft.height()
+#define text_y_center = (dispy / 2) - 6
 
   drawCrossHair(dispx - 10, 10, ILI9488_YELLOW);
   drawCrossHair(dispx / 2, 10, ILI9488_YELLOW);
@@ -1501,35 +1750,33 @@ void calibrateTFT()
   calibrate(dispx - 10, 10, 5);
   calibrate(dispx - 10, dispy / 2, 6);
   calibrate(dispx - 10, dispy - 10, 7);
-  
-  clx = (((rx[0] + rx[1] + rx[2]) / 3));  // "LANDSCAPE"
-  crx = (((rx[5] + rx[6] + rx[7]) / 3));  // "LANDSCAPE"
+
+  clx = (((rx[0] + rx[1] + rx[2]) / 3)); // "LANDSCAPE"
+  crx = (((rx[5] + rx[6] + rx[7]) / 3)); // "LANDSCAPE"
 
   cty = ((ry[0] + ry[3] + ry[5]) / 3);
   cby = ((ry[2] + ry[4] + ry[7]) / 3);
 
-  slope_x = ((crx-clx)/(dispx)); //dispx-20 
-  slope_y = ((cby-cty)/(dispy)); //dispy-20
-  
-  #ifdef serial_debug
-    Serial.print(" -> slope_x: ");
-    Serial.println(slope_x);
-    Serial.print(" -> clx: ");
-    Serial.println(clx);
-    Serial.print(" -> crx: ");
-    Serial.println(crx);
-    Serial.print(" -> slope_y: ");
-    Serial.println(slope_y);
-    Serial.print(" -> cty: ");
-    Serial.println(cty);
-    Serial.print(" -> cby: ");
-    Serial.println(cby);
-  #endif
+  slope_x = ((crx - clx) / (dispx)); //dispx-20
+  slope_y = ((cby - cty) / (dispy)); //dispy-20
+
+#ifdef serial_debug
+  Serial.print(" -> slope_x: ");
+  Serial.println(slope_x);
+  Serial.print(" -> clx: ");
+  Serial.println(clx);
+  Serial.print(" -> crx: ");
+  Serial.println(crx);
+  Serial.print(" -> slope_y: ");
+  Serial.println(slope_y);
+  Serial.print(" -> cty: ");
+  Serial.println(cty);
+  Serial.print(" -> cby: ");
+  Serial.println(cby);
+#endif
 
   done();
   waitForTouch();
-
-  
 }
 
 void drawCrossHair(int x, int y, uint16_t color)
@@ -1541,9 +1788,15 @@ void drawCrossHair(int x, int y, uint16_t color)
 
 void waitForTouch()
 {
-  while (myTouch.touched() == true) {}
-  while (myTouch.touched() == false) {}
-  while (myTouch.touched() == true) {}
+  while (myTouch.touched() == true)
+  {
+  }
+  while (myTouch.touched() == false)
+  {
+  }
+  while (myTouch.touched() == true)
+  {
+  }
 }
 
 void calibrate(int x, int y, int i)
@@ -1558,7 +1811,9 @@ void calibrate(int x, int y, int i)
   drawCrossHair(x, y, ILI9488_YELLOW);
   rx[i] = cx;
   ry[i] = cy;
-  while (myTouch.touched() == true) {}
+  while (myTouch.touched() == true)
+  {
+  }
 }
 
 void readCoordinates()
@@ -1577,8 +1832,10 @@ void readCoordinates()
     tft.drawRect(110, 100, 100, 40, ILI9488_WHITE);
     tft.setTextSize(2);
     tft.setCursor(131, 112);
-    tft.println("PRESS"); 
-    while (myTouch.touched() == false) {}
+    tft.println("PRESS");
+    while (myTouch.touched() == false)
+    {
+    }
     tft.fillRect(110, 100, 100, 40, ILI9488_RED);
     tft.drawRect(110, 100, 100, 40, ILI9488_WHITE);
     tft.setCursor(133, 112);
@@ -1596,7 +1853,6 @@ void readCoordinates()
       else
       {
         failcount++;
-        
       }
     }
     if (cnt >= iter)
@@ -1609,20 +1865,23 @@ void readCoordinates()
       ty = 0;
       cnt = 0;
     }
-    if (failcount >= 10000) {Serial.println("fail");}
-      //fail();
+    if (failcount >= 10000)
+    {
+      Serial.println("fail");
+    }
+    //fail();
   }
 
   cx = tx / iter;
   cy = ty / iter;
 
-  #ifdef serial_debug
-    Serial.print("cx = ");
-    Serial.println(cx);
-    Serial.print("cy = ");
-    Serial.println(cy);
-    Serial.println("");
-  #endif
+#ifdef serial_debug
+  Serial.print("cx = ");
+  Serial.println(cx);
+  Serial.print("cy = ");
+  Serial.println(cy);
+  Serial.println("");
+#endif
 }
 
 void done()
@@ -1633,7 +1892,7 @@ void done()
   tft.setTextColor(ILI9488_WHITE, ILI9488_RED);
   tft.fillRect(0, 0, dispx, 13, ILI9488_RED);
   tft.drawLine(0, 13, dispx - 1, 13, ILI9488_WHITE);
-  tft.println("Touchscreen calibration");//, gTextAlignTopCenter, 0, 2);
+  tft.println("Touchscreen calibration"); //, gTextAlignTopCenter, 0, 2);
 
   tft.setTextColor(ILI9488_WHITE, ILI9488_BLACK);
   tft.println("CALIBRATION COMPLETE\nTouch the area below to test the calibration results and save or discard the use of new calibration parameters.");
@@ -1642,9 +1901,9 @@ void done()
   DrawButton(10, 410, 140, 60, "YES", 0, btn_l_border, btn_l_text, 3);
   DrawButton(170, 410, 140, 60, "NO", 0, btn_l_border, btn_l_text, 3);
   tft.drawRect(0, 100, dispx, 300, ILI9488_WHITE);
-  
+
   int tx, ty = 0;
-  while(ty < 410)
+  while (ty < 410)
   {
     if (myTouch.touched())
     {
@@ -1656,12 +1915,12 @@ void done()
       }
       tx = (p.x - clx) / slope_x;
       ty = (p.y - cty) / slope_y;
-      if(ty > 100 && ty < 400)
+      if (ty > 100 && ty < 400)
       {
         tft.fillRect2(0, 100, dispx, 300, ILI9488_RED);
         drawCrossHair(tx, ty, ILI9488_WHITE);
       }
-      
+
       delay(10);
     }
   }
@@ -1669,122 +1928,129 @@ void done()
 
 double J2000(double yy, double m, double dd, double hh, double mm)
 {
-    double DD = 0; // use 0 for J2000
-    double d = (double)367*yy - (double)7*((double)yy+((double)m+(double)9)/(double)12.0)/(double)4.0+(double)275*m/(double)9.0 + DD + (double)dd - (double)730531; // days since J2000
-    d = floor(d) + hh/24.0 + mm/(24.0*60.0);
-    return d;
+  double DD = 0;                                                                                                                                                                    // use 0 for J2000
+  double d = (double)367 * yy - (double)7 * ((double)yy + ((double)m + (double)9) / (double)12.0) / (double)4.0 + (double)275 * m / (double)9.0 + DD + (double)dd - (double)730531; // days since J2000
+  d = floor(d) + hh / 24.0 + mm / (24.0 * 60.0);
+  return d;
 }
 
 double ipart(double xx)
 {
   double sgn;
-  
-  if(xx<0)
+
+  if (xx < 0)
   {
-     sgn=-1.0;
+    sgn = -1.0;
   }
 
-  else if(xx==0)
+  else if (xx == 0)
   {
-   sgn=0.0;
+    sgn = 0.0;
   }
 
-  else if(xx>0)
+  else if (xx > 0)
   {
-    sgn=1.0;
+    sgn = 1.0;
   }
-  double ret=sgn*((int)fabs(xx));
+  double ret = sgn * ((int)fabs(xx));
 
   return ret;
 }
 
-
 double FNdegmin(double xx)
 {
-  double a = ipart(xx) ;
-  double b = xx - a ;
-  double e = ipart(60 * b) ;
+  double a = ipart(xx);
+  double b = xx - a;
+  double e = ipart(60 * b);
   //   deal with carry on minutes
-  if( e>= 60 )
+  if (e >= 60)
   {
-    e = 0 ;
-    a = a + 1 ;
+    e = 0;
+    a = a + 1;
   }
-  return (a + (e / 100) );
+  return (a + (e / 100));
 }
 
-double dayno(int dx,int mx, int yx, double fx)
+double dayno(int dx, int mx, int yx, double fx)
 {
-  dno=(367 * yx) -  (int)(7*(yx + (int)((mx + 9) / 12)) / 4) + (int)(275 * mx / 9) + dx - 730531.5 + fx;
-  dno-=4975.5;
+  dno = (367 * yx) - (int)(7 * (yx + (int)((mx + 9) / 12)) / 4) + (int)(275 * mx / 9) + dx - 730531.5 + fx;
+  dno -= 4975.5;
   return dno;
 }
 
 double frange(double x)
 {
-  x=x/(2*M_PI);
-  x=(2*M_PI)*(x-ipart(x));
-  if(x<0) x=x+(2*M_PI);
+  x = x / (2 * M_PI);
+  x = (2 * M_PI) * (x - ipart(x));
+  if (x < 0)
+    x = x + (2 * M_PI);
   return x;
 }
 
-double fkep( double m, double ecc)
+double fkep(double m, double ecc)
 {
   double e = ecc;
-  double v = m + (2 * e - 0.25 *pow(e,3) + 5/96 * pow(e,5)) * sin(m) + (1.25 * pow(e,2) - 11/24 * pow(e,4)) * sin(2*m) + (13/12 * pow(e,3) - 43/64 * pow(e,5)) * sin(3*m) + 103/96 * pow(e,4) * sin(4*m) + 1097/960 * pow(e,5) * sin(5*m);
+  double v = m + (2 * e - 0.25 * pow(e, 3) + 5 / 96 * pow(e, 5)) * sin(m) + (1.25 * pow(e, 2) - 11 / 24 * pow(e, 4)) * sin(2 * m) + (13 / 12 * pow(e, 3) - 43 / 64 * pow(e, 5)) * sin(3 * m) + 103 / 96 * pow(e, 4) * sin(4 * m) + 1097 / 960 * pow(e, 5) * sin(5 * m);
 
-  if (v < 0)  v = v + (2 * PI);
+  if (v < 0)
+    v = v + (2 * PI);
   return v;
 }
 
-double fnatan(double x,double y)
+double fnatan(double x, double y)
 {
-    double a=atan(y/x);
-    if(x<0)
-        a=a+PI;
-    if((y<0)&&(x>0))
-        a=a+(2*PI);
-    return a;
+  double a = atan(y / x);
+  if (x < 0)
+    a = a + PI;
+  if ((y < 0) && (x > 0))
+    a = a + (2 * PI);
+  return a;
 }
 
-double JulianDay (int j_date, int j_month, int j_year, double UT)
+double JulianDay(int j_date, int j_month, int j_year, double UT)
 {
-  if (j_month<=2) {j_month = j_month+12; j_year = j_year-1;}
-  return (int)(365.25*j_year) + (int)(30.6001*(j_month+1)) - 15 + 1720996.5 + j_date + UT/24.0;
+  if (j_month <= 2)
+  {
+    j_month = j_month + 12;
+    j_year = j_year - 1;
+  }
+  return (int)(365.25 * j_year) + (int)(30.6001 * (j_month + 1)) - 15 + 1720996.5 + j_date + UT / 24.0;
 }
 
 void drawBatteryLevel(int x, int y, int level)
 {
-  tft.drawRect(x,    y,   23, 12, ILI9488_BLACK);
-  tft.drawRect(x+22, y+3,  3,  6, ILI9488_BLACK);
+  tft.drawRect(x, y, 23, 12, ILI9488_BLACK);
+  tft.drawRect(x + 22, y + 3, 3, 6, ILI9488_BLACK);
 
-  tft.fillRect2(x+1, y+1, 20, 10, title_bg); //sfondo batteria vuota
-  
-  if (level == -1)  //USB as power supply
+  tft.fillRect2(x + 1, y + 1, 20, 10, title_bg); //sfondo batteria vuota
+
+  if (level == -1) //USB as power supply
   {
-    tft.setCursor(x+3, y+3);
+    tft.setCursor(x + 3, y + 3);
     tft.setTextSize(1);
     tft.setTextColor(btn_d_text);
     tft.print("USB");
   }
-  else if(level > 20)  tft.fillRect2(x+2, y+2, round((double)level/5)-1, 8, ILI9488_BLACK);
+  else if (level > 20)
+    tft.fillRect2(x + 2, y + 2, round((double)level / 5) - 1, 8, ILI9488_BLACK);
+  else if (IS_NIGHTMODE)
+    tft.fillRect2(x + 2, y + 2, round((double)level / 5) - 1, 8, btn_d_text);
   else
-    if(IS_NIGHTMODE)  tft.fillRect2(x+2, y+2, round((double)level/5)-1, 8, btn_d_text);
-    else              tft.fillRect2(x+2, y+2, round((double)level/5), 8, ILI9488_RED);
+    tft.fillRect2(x + 2, y + 2, round((double)level / 5), 8, ILI9488_RED);
 }
 
 int calculateBatteryLevel()
 {
   int voltageLevel = 0;
   int pmin = -1;
-  
-  #ifdef use_battery_level
-    analogReadResolution(12);
-    voltageLevel = analogRead(A2);
-    voltageLevel += 270;  //To compensate OPAMP OFFSET (do I need to use an automatic routine??)
-    analogReadResolution(10);
 
-    /*
+#ifdef use_battery_level
+  analogReadResolution(12);
+  voltageLevel = analogRead(A2);
+  voltageLevel += 270; //To compensate OPAMP OFFSET (do I need to use an automatic routine??)
+  analogReadResolution(10);
+
+  /*
      * Since SLA batteries have very non linear voltage to capacity response I'm approximating the function that describes the discharge of
      * such batteries. To do so I have:
      * 1 - Measured battery voltages on known capacities.
@@ -1793,34 +2059,35 @@ int calculateBatteryLevel()
      * 4 - Solve the equation to find the value x that gives me the battery voltage V. I have percentage p = x.
      */
 
-    // Data from SLA curve fitting.. Vedi file di Numbers: battery_calc.numbers
-    double a = 3350;
-    double b = 0.001042;
-    double c = -271.6;
-    double d = -0.129;
-    
-    double minim = 100;
+  // Data from SLA curve fitting.. Vedi file di Numbers: battery_calc.numbers
+  double a = 3350;
+  double b = 0.001042;
+  double c = -271.6;
+  double d = -0.129;
 
-    // This is a very simple way to solve the following equation: a*exp(b*x)+c*exp(d*x) since it can't be solved analitically.
-    // Since I will probably have a fully charged battery most of the times I start solving the equations from 100% battery level.
-    for(int p=100; p>0; p--)
+  double minim = 100;
+
+  // This is a very simple way to solve the following equation: a*exp(b*x)+c*exp(d*x) since it can't be solved analitically.
+  // Since I will probably have a fully charged battery most of the times I start solving the equations from 100% battery level.
+  for (int p = 100; p > 0; p--)
+  {
+    double vq = a * exp(b * p) + c * exp(d * p);
+    int val = abs(vq - voltageLevel);
+    if (val < 15)
+      break; // Is 15 a good threshold? Decrese to increase accuracy (may fail?)
+    else if (val < minim)
     {
-        double vq = a*exp(b*p)+c*exp(d*p);
-        int val = abs(vq-voltageLevel);     
-        if(val < 15)  break;  // Is 15 a good threshold? Decrese to increase accuracy (may fail?)
-        else if(val < minim)
-        {
-            minim = val;
-            pmin = p;
-        }
+      minim = val;
+      pmin = p;
     }
+  }
 
-    #ifdef serial_debug
-      Serial.print("batteryLevel = ");
-      Serial.print(pmin);
-      Serial.println(" %");
-    #endif
-  #endif
+#ifdef serial_debug
+  Serial.print("batteryLevel = ");
+  Serial.print(pmin);
+  Serial.println(" %");
+#endif
+#endif
   /*
   double voltageLevel = 0;
   #ifdef use_battery_level
@@ -1846,50 +2113,54 @@ int calculateBatteryLevel()
   return pmin;
 }
 
-void deb_print (char *str) {
-    #ifdef serial_debug
-      Serial.print(str);
-    #endif
-
+void deb_print(char *str)
+{
+#ifdef serial_debug
+  Serial.print(str);
+#endif
 }
-void deb_print (int str) {
-    #ifdef serial_debug
-      Serial.print(str);
-    #endif
-
+void deb_print(int str)
+{
+#ifdef serial_debug
+  Serial.print(str);
+#endif
 }
-void deb_print (String str) {
-    #ifdef serial_debug
-      Serial.print(str);
-    #endif
-
+void deb_print(String str)
+{
+#ifdef serial_debug
+  Serial.print(str);
+#endif
 }
-void deb_print (double str) {
-    #ifdef serial_debug
-      Serial.print(str);
-    #endif
-
-}
-
-void deb_println (char *str) {
-    #ifdef serial_debug
-      Serial.println(str);
-    #endif
+void deb_print(double str)
+{
+#ifdef serial_debug
+  Serial.print(str);
+#endif
 }
 
-void deb_println (int str) {
-    #ifdef serial_debug
-      Serial.println(str);
-    #endif
+void deb_println(char *str)
+{
+#ifdef serial_debug
+  Serial.println(str);
+#endif
 }
 
-void deb_println (String str) {
-    #ifdef serial_debug
-      Serial.println(str);
-    #endif
+void deb_println(int str)
+{
+#ifdef serial_debug
+  Serial.println(str);
+#endif
 }
-void deb_println (double str) {
-    #ifdef serial_debug
-      Serial.println(str);
-    #endif
+
+void deb_println(String str)
+{
+#ifdef serial_debug
+  Serial.println(str);
+#endif
+}
+void deb_println(double str)
+{
+#ifdef serial_debug
+  Serial.println(str);
+#endif
 }

@@ -64,7 +64,7 @@
 // #define use_battery_level
 
 #define reverse_logic true //set true if the stepper drivers logic is "neglected enabled"
-// #define serial_debug       // comment out to deactivate the serial debug mode
+#define serial_debug       // comment out to deactivate the serial debug mode
 #define no_gps
 
 // HERE GOES THE Mount, Gears and Drive information.
@@ -182,6 +182,7 @@ String OBJECT_NAME;
 String OBJECT_DESCR;
 String OBJECT_DETAILS;
 String BT_COMMAND_STR;
+char SERIAL_COMMAND_STR;
 String START_TIME;
 int STP_FWD = LOW;
 int STP_BACK = HIGH;
@@ -323,6 +324,12 @@ boolean sd_ok = true;
 int last_button_state = LOW;
 int button_state;
 long lastDebounceTime = 0;
+int xPos = 4;
+int yPos = 4;
+int speed;
+int del=1000;
+
+int debug=0;
 
 void setup(void)
 {
@@ -879,13 +886,107 @@ void loop(void)
     xPosition = analogRead(xPin);
     yPosition = analogRead(yPin);
 
-    if ((xPosition < x_cal - 100) || (xPosition > x_cal + 100) || (yPosition < y_cal - 100) || (yPosition > x_cal + 100))
-    {
+
 #ifdef serial_debug
-//       Serial.print("xPin = ");
-//       Serial.print(xPosition);
-//       Serial.print("   yPin = ");
-//       Serial.println(yPosition);
+   if (Serial.available() > 0) 
+    {
+      char instr=Serial.read();
+      if (instr=='s') {
+         speed=Serial.parseInt();
+         Serial.print("Speed set to: ");
+         Serial.println(speed);
+      }
+      if (instr=='d') {
+         del=Serial.parseInt();
+         Serial.print("Delay set to: ");
+         Serial.println(del);
+      }
+     if (instr=='g') {
+         debug=Serial.parseInt();
+         Serial.print("Serial debug set to: ");
+         Serial.println(debug);
+      }
+
+
+
+    }
+#endif
+
+
+    if ((xPosition < x_cal - 50) || (xPosition > x_cal + 50) || (yPosition < y_cal - 50) || (yPosition > x_cal + 50) || xPos !=4 || yPos != 4)
+    {
+    
+    switch (xPos) {
+      case 1:
+        if (xPosition > 20) { xPos = 2;}
+        break;
+      case 2:
+        if (xPosition > 255) { xPos = 3;}
+        if (xPosition < 10)  { xPos = 1;}
+        break;
+      case 3:
+        if (xPosition > 461) { xPos = 4;}
+        if (xPosition < 235) { xPos = 2;}
+        break;
+      case 4:
+        if (xPosition > 571) { xPos = 5;}
+        if (xPosition < 451) { xPos = 3;}
+        break;
+      case 5: 
+        if (xPosition > 806) { xPos = 6;}
+        if (xPosition < 561) { xPos = 4;}
+        break;
+      case 6: 
+        if (xPosition > 1013){ xPos = 7;}
+        if (xPosition < 786) { xPos = 5;}
+        break;
+      case 7: 
+        if (xPosition < 1003){ xPos = 6;}
+        break;
+        
+    }
+    switch (yPos) {
+      case 1:
+        if (yPosition > 20)  { yPos = 2;}
+        break;
+      case 2:
+        if (yPosition > 255) { yPos = 3;}
+        if (yPosition < 10)  { yPos = 1;}
+        break;
+      case 3:
+        if (yPosition > 461) { yPos = 4;}
+        if (yPosition < 235) { yPos = 2;}
+        break;
+      case 4:
+        if (yPosition > 571) { yPos = 5;}
+        if (yPosition < 451) { yPos = 3;}
+        break;
+      case 5: 
+        if (yPosition > 806) { yPos = 6;}
+        if (yPosition < 561) { yPos = 4;}
+        break;
+      case 6: 
+        if (yPosition > 1013){ yPos = 7;}
+        if (yPosition < 786) { yPos = 5;}
+        break;
+      case 7: 
+        if (yPosition < 1003){ yPos = 6;}
+        break;
+        
+    }
+
+
+#ifdef serial_debug
+       if (debug > 0) {
+          Serial.print("xPin = ");
+          Serial.print(xPosition);
+          Serial.print("  xPos = ");
+          Serial.print(xPos);
+          Serial.print("  yPin = ");
+          Serial.print(yPosition);
+          Serial.print("  yPos = ");
+          Serial.println(yPos);
+       }
 #endif
       IS_MANUAL_MOVE = true;
       if (IS_STEPPERS_ON)
