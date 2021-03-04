@@ -11,11 +11,21 @@
 void planet_pos(int pno)
 {
   if (pno > 10) pno = 10;
-  yy = year();
-  mu = month();
-  dd = day();
-  hh = hour();
-  mm = minute();
+  // yy = year();
+  // mu = month();
+  // dd = day();
+  // hh = hour();
+  // mm = minute();
+
+  String Date_q = String(rtc.getDateStr());
+  String Time_q = String(rtc.getTimeStr());
+  int dd = Date_q.substring(0, 2).toInt();
+  int mu = Date_q.substring(3, 5).toInt();
+  int yy = Date_q.substring(6).toInt();
+  int mm = Time_q.substring(6).toInt();
+  int hh = Time_q.substring(0, 2).toInt(); // hours
+  
+
 
   OBJECT_NAME = ss_planet_names[pno];
 
@@ -25,6 +35,23 @@ void planet_pos(int pno)
     Serial.print(hour());
     Serial.print(":");
     Serial.println(minute());
+    Serial.print("year: ");
+    Serial.println(yy);
+    Serial.print("month: ");
+    Serial.println(mm);
+    Serial.print("day: ");
+    Serial.println(dd);
+    Serial.print("hour: ");
+    Serial.println(hh);
+    Serial.print("minute: ");
+    Serial.println(mm);
+    Serial.println("----------------- ");
+
+    Serial.print("Date: ");
+    Serial.println(Date_q);
+    Serial.print("Time: ");
+    Serial.println(Time_q);
+
   #endif
 
   double OBJ_RA = 0;
