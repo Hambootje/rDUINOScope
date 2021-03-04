@@ -32,7 +32,7 @@
 //    * CURRENT_SCREEN==5   - drawCoordinatesScreen() Only have "back" button
 //    * CURRENT_SCREEN==6   - drawLoadScreen() Captures input on Load screen (all of them: Messier && Treasurres)
 //    * CURRENT_SCREEN==7   - drawOptionsScreen();
-//    * CURRENT_SCREEN==8   - not used
+//    * CURRENT_SCREEN==8   - drawMountCalScreen();
 //    * CURRENT_SCREEN==9   - not used
 //    * CURRENT_SCREEN==10  - drawSTATScreen()
 //    * CURRENT_SCREEN==11  - drawStarMap();
@@ -164,6 +164,48 @@ void drawSelectAlignment()
     DrawButton(30, 250, 250, 65, "Iterative Align", btn_d_border, btn_l_border, btn_l_text, 2);
   }
   DrawButton(30, 400, 250, 55, "Skip Alignment", 0, btn_l_border, btn_l_text, 2);
+}
+void drawMountCalScreen()
+{
+  CURRENT_SCREEN = 8;
+  tft.fillScreen2(BLACK);
+  tft.fillRect2(0, 0, 400, 50, title_bg); // yellow Rectangle  Was (1, 1, 239, 35, title_bg);
+  tft.drawLine(0, 52, 400, 52, title_bg); // yellow line
+  tft.setCursor(20, 13);
+  tft.setTextColor(title_texts); // black
+  tft.setTextSize(4);
+  tft.print("Mount");
+  tft.setTextColor(btn_l_text); // dark green
+  tft.setTextSize(3);
+  DrawButton(210, 5, 100, 40, "<back", btn_d_border, btn_l_border, btn_l_text, 3);
+
+  tft.setCursor(10, 85);
+  tft.setTextColor(l_text); // black
+  tft.setTextSize(3);
+
+  tft.print("Backlash RA");
+  DrawButton(10, 120, 40, 65, " -- ", btn_d_border, btn_l_border, btn_l_text, 2);
+  DrawButton(60, 120, 40, 65, " - ", btn_d_border, btn_l_border, btn_l_text, 2);
+  DrawButton(220, 120, 40, 65, " + ", btn_d_border, btn_l_border, btn_l_text, 2);
+  DrawButton(270, 120, 40, 65, " ++ ", btn_d_border, btn_l_border, btn_l_text, 2);
+
+
+  tft.setCursor(10, 280);
+  tft.setTextColor(l_text); // black
+  tft.setTextSize(3);
+  tft.print("Backlash DEC");
+
+  DrawButton(10, 315, 40, 65, " -- ", btn_d_border, btn_l_border, btn_l_text, 2);
+  DrawButton(60, 315, 40, 65, " - ", btn_d_border, btn_l_border, btn_l_text, 2);
+  DrawButton(220, 315, 40, 65, " + ", btn_d_border, btn_l_border, btn_l_text, 2);
+  DrawButton(270, 315, 40, 65, " ++ ", btn_d_border, btn_l_border, btn_l_text, 2);
+
+
+  update_RA_backlash();
+  update_DEC_backlash();
+  update_RA_sweep();
+  update_DEC_sweep();
+
 }
 
 void drawMainScreen()
@@ -582,7 +624,6 @@ void drawCoordinatesScreen()
   tft.print("  Coordinates represented here are based on the current motor positions and re-calculated back to Hour Angle, Right Ascension and Declination. NB: Note that alignment affects the scales and small variations are possible!");
 
   DrawButton(40, 405, 240, 70, "SET HOME POSITION", 0, btn_l_border, btn_l_text, 2);
-
 }
 
 void drawLoadScreen()
@@ -737,22 +778,29 @@ void drawOptionsScreen()
 
   updateStepper_opt();
 
-  DrawButton(230, 300, 80, 100, "", 0, btn_l_border, btn_l_text, 2);
-  DrawButton(230, 410, 80, 70, "", 0, btn_l_border, btn_l_text, 2);
-  tft.setCursor(252, 320);
-  tft.print("Set");
-  tft.setCursor(252, 340);
+  tft.setCursor(220, 280);
+  tft.setTextSize(2.5);
+  tft.println("Adjust:");
+
+  //tft.setCursor(252, 320);
+  //tft.print("Set");
+  //tft.setCursor(252, 340);
 #ifdef no_gps
-  tft.print("Clock");
+  //tft.print("Clock");
 #else
   tft.print("GPS");
   tft.setCursor(242, 360);
   tft.print("Clock");
 #endif
-  tft.setCursor(252, 430);
-  tft.print("TFT");
-  tft.setCursor(252, 450);
-  tft.print("Cal");
+
+  DrawButton(220, 300, 100, 50, "Time", 0, btn_l_border, btn_l_text, 2);
+  DrawButton(220, 365, 100, 50, "TFT", 0, btn_l_border, btn_l_text, 2);
+  DrawButton(220, 430, 100, 50, "Mount", 0, btn_l_border, btn_l_text, 2);
+
+  // tft.setCursor(252, 430);
+  // tft.print("TFT");
+  // tft.setCursor(252, 450);
+  // tft.print("Cal");
 }
 
 void drawSTATScreen()
@@ -1104,96 +1152,9 @@ void OnScreenMsg(int Msg)
   }
 }
 
-// void considerDayNightMode() {
-//   boolean prev_night_mode = IS_NIGHTMODE;
-//   if (analogRead(DAY_NIGHT_PIN) > 800) {
-//     IS_NIGHTMODE = true;
-//   } else {
-//     IS_NIGHTMODE = false;
-//   }
-//   // Now make sure it works for all screen - redraws them when mode switched
-//   if (prev_night_mode != IS_NIGHTMODE)
-//   {
-//     if (IS_NIGHTMODE == true)
-//     {
-//       // Night Mode
-//       IS_NIGHTMODE = true;
-//       texts = Maroon;
-//       l_text = RED;
-//       d_text = Maroon;
-//       title_bg = RED;
-//       title_texts = BLACK;
-//       messie_btn = Maroon;
-//       btn_l_text = RED;
-//       btn_d_text = Maroon;
-//       btn_l_border = RED;
-//       btn_d_border = Maroon;
-//       btn_l_selection = RED;
-//       MsgBox_bg = RED;
-//       MsgBox_t = BLACK;
-//       Button_State_ON = BLACK;
-//       Button_State_OFF = BLACK;
-//       Button_Title = BLACK;
-//     }
-//     else
-//     {
-//       IS_NIGHTMODE = false;
-//       texts = LightGrey;
-//       l_text = WHITE;
-//       d_text = LightGrey;
-//       btn_l_text = GreenYellow;
-//       btn_d_text = DarkGreen;
-//       btn_l_border = GREEN;
-//       btn_d_border = DarkGreen;
-//       btn_l_selection = DarkGreen;
-//       title_bg = Orange;
-//       title_texts = BLACK;
-//       messie_btn = DarkGrey;
-//       MsgBox_bg = BLACK;
-//       MsgBox_t = GreenYellow;
-//       Button_State_ON = DarkGreen;
-//       Button_State_OFF = BLACK;
-//       Button_Title = BLACK;
-//     }
-//     if (CURRENT_SCREEN == 0)
-//     {
-//       drawGPSScreen();
-//     }
-//     else if (CURRENT_SCREEN == 1)
-//     {
-//       drawClockScreen();
-//     } else if (CURRENT_SCREEN == 3) {
-//       drawSelectAlignment();
-//     } else if (CURRENT_SCREEN == 4) {
-//       drawMainScreen();
-//     } else if (CURRENT_SCREEN == 5) {
-//       drawCoordinatesScreen();
-//     } else if (CURRENT_SCREEN == 6) {
-//       drawLoadScreen();
-//     } else if (CURRENT_SCREEN == 7) {
-//       drawOptionsScreen();
-//     } else if (CURRENT_SCREEN == 10) {
-//       drawSTATScreen();
-//     } else if (CURRENT_SCREEN == 12) {
-//       drawStarSyncScreen();
-//     } else if (CURRENT_SCREEN == 13) {
-//       drawConstelationScreen(0);
-//     }
-//     else if (CURRENT_SCREEN == 14) {
-//       drawTFTCalibrationScreen();
-//     }
-//   }
-// }
 
 void considerDayNightMode()
 {
-  // boolean prev_night_mode = IS_NIGHTMODE;
-  // if (analogRead(DAY_NIGHT_PIN) > 800) {
-  //   IS_NIGHTMODE = true;
-  // } else {
-  //   IS_NIGHTMODE = false;
-  // }
-
   int button_read = digitalRead(Joy_SW);
 
   if (button_read != last_button_state)
@@ -1283,6 +1244,10 @@ void considerDayNightMode()
         else if (CURRENT_SCREEN == 7)
         {
           drawOptionsScreen();
+        }
+        else if (CURRENT_SCREEN == 8)
+        {
+          drawMountCalScreen();
         }
         else if (CURRENT_SCREEN == 10)
         {
@@ -1826,7 +1791,8 @@ void updateTriangleBrightness_opt()
 
   //triangolo chiaro:
   // int x_br = (TFT_Brightness-190)*4 + 5;
-  int x_br = (TFT_Brightness - 125) * 2 + 5;
+  // int x_br = (TFT_Brightness - 125) * 2 + 5;
+  int x_br = (TFT_Brightness - 8) * (1 / 0.95) + 5;
   int tria_h = floor((265 - x_br) * 0.17307);
   tft.fillTriangle(5, 200, x_br, 200, x_br, tria_h + 156, btn_l_border);
   int bright_perc = round(TFT_Brightness * 0.39215);
@@ -2068,4 +2034,40 @@ void drawConfirmSunTrack()
       delay(100);
   }
   considerTouchInput(tx, ty);
+}
+
+void update_RA_backlash()
+{
+  DrawButton(110, 120, 100, 65, String(RA_backlash), btn_d_border, btn_l_border, l_text, 2);
+  RA_stepper.setBacklash(RA_backlash);
+}
+
+void update_DEC_backlash()
+{
+  DrawButton(110, 315, 100, 65, String(DEC_backlash), btn_d_border, btn_l_border, l_text, 2);
+  DEC_stepper.setBacklash(DEC_backlash);
+}
+
+void update_RA_sweep()
+{
+  if (RA_sweep)
+  {
+    DrawButton(10, 195, 300, 65, "Sweep motor", btn_d_border, btn_l_border, btn_l_text, 2);
+  }
+  else
+  {
+    DrawButton(10, 195, 300, 65, "Sweep motor", 0, btn_l_border, btn_l_text, 2);
+  }
+}
+
+void update_DEC_sweep()
+{
+  if (DEC_sweep)
+  {
+    DrawButton(10, 390, 300, 65, "Sweep motor", btn_d_border, btn_l_border, btn_l_text, 2);
+  }
+  else
+  {
+    DrawButton(10, 390, 300, 65, "Sweep motor", 0, btn_l_border, btn_l_text, 2);
+  }
 }

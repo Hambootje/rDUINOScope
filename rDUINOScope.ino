@@ -56,6 +56,14 @@
  *     -  Roll over pager when loading object (next on last page goes to first page)
  *     -  Show page on bottom of the screen when loading object
  *     -  Added "Set Home position" option to CoordinatesScreen screen
+ * 
+ *     -  Fixed displaying Coordinates screen (HA,RA and DEC were mixed up)
+ *     -  Used Flexystepper library for smooth manual movements and slewing (linear acceleration)
+ *     -  Fixed (sometimes) freezing after homing
+ *     -  Only used varables in FlexyStepper class for current position to prevent double book keeping
+ *     -  Added backlash compensation when changing direction
+ *     -  Added backlash compensation setting menu, store setting to SD card
+ *     -  Fixed getting current time when calculating planets position, now getting time directly from RTC
 */
 
 #include "defines.h" //notes, colors, stars and planets
@@ -63,8 +71,7 @@
 //#include "src/DHT-sensor-library-master/DHT.h"
 // #define use_battery_level
 
-#define reverse_logic true //set true if the stepper drivers logic is "neglected enabled"
-#define serial_debug       // comment out to deactivate the serial debug mode
+#define serial_debug // comment out to deactivate the serial debug mode
 #define no_gps
 
 // HERE GOES THE Mount, Gears and Drive information.
@@ -111,6 +118,7 @@ int Clock_Lunar;       // Variable for the Interruptions. nterruption is initial
 #include <math.h>
 #include <TinyGPS++.h>
 #include <XPT2046_Touchscreen.h> // Use edited library from rDUINOScope ILI9488 repo
+#include <FlexyStepper.h>
 
 #ifdef VSCODE
 #include "BT.ino"
@@ -120,6 +128,9 @@ int Clock_Lunar;       // Variable for the Interruptions. nterruption is initial
 #include "planets_calc.ino"
 #include "touch_inputs.ino"
 #endif
+
+FlexyStepper RA_stepper;
+FlexyStepper DEC_stepper;
 
 ////////////////////////////////////////////////
 /** ILI9488 pin map */
@@ -186,10 +197,10 @@ char SERIAL_COMMAND_STR;
 String START_TIME;
 int STP_FWD = LOW;
 int STP_BACK = HIGH;
-float OBJECT_RA_H;
-float OBJECT_RA_M;
-float OBJECT_DEC_D;
-float OBJECT_DEC_M;
+float OBJECT_RA_H = 12;  // CP as default
+float OBJECT_RA_M = 0;   // CP as default
+float OBJECT_DEC_D = 90; // CP as default
+float OBJECT_DEC_M = 0;  // CP as default
 float OBJECT_MAG;
 float curr_RA_H, curr_RA_M, curr_RA_S, curr_DEC_D, curr_DEC_M, curr_DEC_S; // Global variables to store Mount's current RA and DEC.
 char curr_RA_lz[9], curr_DEC_lz[10], curr_HA_lz[9];                        // Global variable to store current RA and DEC with Leading Zeroes and sign (RA: 00:00:00; DEC: +/-00*00:00)
@@ -224,7 +235,8 @@ boolean IS_MERIDIAN_PASSED = false;
 boolean IS_POSIBLE_MERIDIAN_FLIP = true;
 boolean IS_MERIDIAN_FLIP_AUTOMATIC = true;
 boolean IS_BT_MODE_ON = false;
-boolean IS_MANUAL_MOVE = false;
+boolean IS_MANUAL_RA_MOVE = false;
+boolean IS_MANUAL_DEC_MOVE = false;
 boolean IS_FAN1_ON = true;
 boolean IS_FAN2_ON = true;
 boolean IS_CUSTOM_MAP_SELECTED = false;
@@ -246,7 +258,8 @@ String Stepper_State = "ON";
 String Mer_Flip_State = "Auto";
 String Tracking_Mode = "Celest";
 
-int RA_microSteps, DEC_microSteps, rev_RA_microSteps, rev_DEC_microSteps; // Current position of the motors in MicroSteps! - when movement occures, values are changed accordingly (manual, tracking or slew to);
+// int RA_microSteps, DEC_microSteps, rev_RA_microSteps, rev_DEC_microSteps; // Current position of the motors in MicroSteps! - when movement occures, values are changed accordingly (manual, tracking or slew to);
+int rev_RA_microSteps, rev_DEC_microSteps; // Current position of the motors in MicroSteps! - when movement occures, values are changed accordingly (manual, tracking or slew to);
 int RA_mode_steps, DEC_mode_steps;
 int SLEW_RA_microsteps, SLEW_DEC_microsteps; // Where the mottors needs to go in order to point to the object
 int RA_finish_last = 0;
@@ -304,8 +317,8 @@ int DEC_MODE2 = 31;
 int RA_ENABLE = 53;
 int DEC_ENABLE = 37;
 
-int yPin = A10;    //A0;
-int xPin = A9;     //A1;
+int yPin = A9;     //A0;
+int xPin = A10;    //A1;
 int FAN1 = 36;     //37;
 int FAN2 = 34;     //39;
 int TFTBright = 9; //13;
@@ -326,13 +339,36 @@ int button_state;
 long lastDebounceTime = 0;
 int xPos = 4;
 int yPos = 4;
-int speed;
-int del=1000;
 
-int debug=0;
+int RA_backlash = 0;
+int DEC_backlash = 0;
+boolean RA_sweep = false;
+boolean IS_RA_sweep = false;
+boolean DEC_sweep = false;
+boolean IS_DEC_sweep = false;
+int RA_saveCurrentPositionInSteps;
+int DEC_saveCurrentPositionInSteps;
+boolean RA_sweep_dir = false;
+boolean DEC_sweep_dir = false;
+
+int speed = 14000;
+int acc = 7000;
+int del = 750;
+boolean IS_SERIAL_MOVE = false;
+
+int debug = 0;
+
+int adc_channel = 0;
+unsigned long last_adc_read = 0L;
+
+int home_pos = 0;
 
 void setup(void)
 {
+
+  RA_stepper.connectToPins(RA_STP, RA_DIR);
+  DEC_stepper.connectToPins(DEC_STP, DEC_DIR);
+
 #ifdef serial_debug
   Serial.begin(57600);
   while (!Serial)
@@ -400,6 +436,9 @@ void setup(void)
   digitalWrite(DEC_ENABLE, HIGH); // disable stepper driver
   digitalWrite(RA_ENABLE, HIGH);  // disable stepper driver
 
+  setmStepsMode("R", MICROSteps);
+  setmStepsMode("D", MICROSteps);
+
   // Joystick
   pinMode(Joy_SW, INPUT_PULLUP);
   pinMode(xPin, INPUT);
@@ -410,8 +449,10 @@ void setup(void)
   pinMode(FAN2, OUTPUT);
 
   // Set RA and DEC microstep position
-  RA_microSteps = RA_90; //  --> point to North Sudereal Pole = -180 deg (-12h)
-  DEC_microSteps = 0;    //  --> Point to North Sudereal Pole = 90 deg
+  RA_stepper.setCurrentPositionInSteps(RA_90);
+  RA_stepper.setTargetPositionInSteps(RA_90);
+  DEC_stepper.setCurrentPositionInSteps(0);
+  DEC_stepper.setTargetPositionInSteps(0);
 
   Timer3.attachInterrupt(Sidereal_rate);
   //  Timer3.start(Clock_Sidereal); // executes the code every 62.329 ms.
@@ -612,7 +653,7 @@ void setup(void)
       {
         Messier_Array[NR_MESS] = items;
         NR_MESS++;
-        deb_print(items);
+        //deb_print(items);
         items = "";
       }
     }
@@ -655,7 +696,7 @@ void setup(void)
       {
         Treasure_Array[NR_TREAS] = items;
         NR_TREAS++;
-        deb_print(items);
+        //deb_print(items);
         items = "";
       }
     }
@@ -744,7 +785,6 @@ void setup(void)
   }
 
   tft.println("--> initializing BlueTooth");
-  delay(100);
   tft.println("--> initializing GPS");
 
 #ifndef serial_debug
@@ -791,10 +831,10 @@ void setup(void)
     // SoundOn(note_gb, 8);
     // delay(50);
     // SoundOn(note_f, 48);
-    SoundOn(note_f, 48);
-    delay(100);
-    SoundOn(note_d, 48);
-    delay(100);
+    SoundOn(note_f, 15);
+    delay(25);
+    SoundOn(note_d, 15);
+    delay(25);
   }
 
   delay(500);
@@ -808,13 +848,12 @@ void setup(void)
 
   UPD_T = millis();
   UPD_LST = millis();
-  DELAY_Slew = millis();
+  DELAY_Slew = micros();
   TFT_Timer = millis();
   //TFT_timeout = 0;
   RA_move_ending = 0;
   considerTempUpdates();
 
-  // digitalWrite(POWER_DRV8825, HIGH == !reverse_logic); // Switch on the Motor Driver Power!
   digitalWrite(DEC_ENABLE, LOW); //enable stepper drivers
   digitalWrite(RA_ENABLE, LOW);  //enable stepper drivers
 }
@@ -836,20 +875,12 @@ void loop(void)
 
   // Adding this delay to SLOW DOWN the Arduino so that the motors can catch up!
   // The delay is only needed when in full speed.... otherways the CalculateLST_HA() takes over and
-  // slows down the arduino enought. CalculateLST_HA() when slewing only fires when the motors slows down
+  // slows down the arduino enough. CalculateLST_HA() when slewing only fires when the motors slows down
   // after they are very close to the Object Position.
-  if ((DELAY_Slew + 1 <= millis()) && (IS_OBJ_FOUND == false))
+
+  // if ((DELAY_Slew + 500 <= micros()) && (IS_OBJ_FOUND == false))
+  if ((IS_OBJ_FOUND == false))
   {
-
-    // If you wonder how I get to this delay - 800 uS
-    // When I optimised the code for speed, the main delay was coming from calculateLST_HA() which back then was calculated on every Loop();
-    // Once I optimized it to only calculate when the SlewTo stops (to fine tune after DEC stops) it turned out that
-    // the code is too fast and the motors only "screemed" but not rotating - due to the low voltage/current.
-    // This variable depends on How You Limit the Current to your motors and the Voltage you use!
-    // I use 12V and 1.6A (70% in full step = 1.10A) to drive my NEMA 17 SY42STH47-1684B Motors.
-    // Please note that Potentiometer does not really give consistent results for current on every restart (it drifted between 1.12A - 0.9A).
-
-    // HINT: you can try to play with the Current/Voltage that powers the motors to get faster speeds.
     if (IS_STEPPERS_ON)
     {
       cosiderSlewTo();
@@ -861,11 +892,9 @@ void loop(void)
       IS_OBJ_FOUND = true;
       RA_move_ending = 0;
     }
-    DELAY_Slew = millis();
-    // delayMicroseconds(800);
   }
 
-  // The below part of the code makes sure that the system does NOT process any other inputs while SlweingTo!
+  // The below part of the code makes sure that the system does NOT process any other inputs while SlewingTo!
   // Since both motors need every STEP to come from Arduino board, it needs it's entire power to run the motors in fastest possible way
   // The fastes possible from this board in the current state of the software is approx 3 turns/sec (600 steps/sec)
   // IS_OBJ_FOUND == true --> Means that SLEW command have completed
@@ -873,7 +902,7 @@ void loop(void)
   if (IS_OBJ_FOUND == true)
   {
     // BLUETOOTH Considerations ? ... if any
-    if ((IS_BT_MODE_ON == true) && (Serial3.available() > 0) && (IS_MANUAL_MOVE == false))
+    if ((IS_BT_MODE_ON == true) && (Serial3.available() > 0) && (IS_MANUAL_RA_MOVE == false))
     {
       BT_COMMAND_STR = Serial3.readStringUntil('#');
 #ifdef serial_debug
@@ -882,122 +911,10 @@ void loop(void)
       considerBTCommands();
     }
 
-    // JOYSTICK Movements ? ... if any
-    xPosition = analogRead(xPin);
-    yPosition = analogRead(yPin);
+    updateJoystick();
+    considerManualMove();
 
-
-#ifdef serial_debug
-   if (Serial.available() > 0) 
-    {
-      char instr=Serial.read();
-      if (instr=='s') {
-         speed=Serial.parseInt();
-         Serial.print("Speed set to: ");
-         Serial.println(speed);
-      }
-      if (instr=='d') {
-         del=Serial.parseInt();
-         Serial.print("Delay set to: ");
-         Serial.println(del);
-      }
-     if (instr=='g') {
-         debug=Serial.parseInt();
-         Serial.print("Serial debug set to: ");
-         Serial.println(debug);
-      }
-
-
-
-    }
-#endif
-
-
-    if ((xPosition < x_cal - 50) || (xPosition > x_cal + 50) || (yPosition < y_cal - 50) || (yPosition > x_cal + 50) || xPos !=4 || yPos != 4)
-    {
-    
-    switch (xPos) {
-      case 1:
-        if (xPosition > 20) { xPos = 2;}
-        break;
-      case 2:
-        if (xPosition > 255) { xPos = 3;}
-        if (xPosition < 10)  { xPos = 1;}
-        break;
-      case 3:
-        if (xPosition > 461) { xPos = 4;}
-        if (xPosition < 235) { xPos = 2;}
-        break;
-      case 4:
-        if (xPosition > 571) { xPos = 5;}
-        if (xPosition < 451) { xPos = 3;}
-        break;
-      case 5: 
-        if (xPosition > 806) { xPos = 6;}
-        if (xPosition < 561) { xPos = 4;}
-        break;
-      case 6: 
-        if (xPosition > 1013){ xPos = 7;}
-        if (xPosition < 786) { xPos = 5;}
-        break;
-      case 7: 
-        if (xPosition < 1003){ xPos = 6;}
-        break;
-        
-    }
-    switch (yPos) {
-      case 1:
-        if (yPosition > 20)  { yPos = 2;}
-        break;
-      case 2:
-        if (yPosition > 255) { yPos = 3;}
-        if (yPosition < 10)  { yPos = 1;}
-        break;
-      case 3:
-        if (yPosition > 461) { yPos = 4;}
-        if (yPosition < 235) { yPos = 2;}
-        break;
-      case 4:
-        if (yPosition > 571) { yPos = 5;}
-        if (yPosition < 451) { yPos = 3;}
-        break;
-      case 5: 
-        if (yPosition > 806) { yPos = 6;}
-        if (yPosition < 561) { yPos = 4;}
-        break;
-      case 6: 
-        if (yPosition > 1013){ yPos = 7;}
-        if (yPosition < 786) { yPos = 5;}
-        break;
-      case 7: 
-        if (yPosition < 1003){ yPos = 6;}
-        break;
-        
-    }
-
-
-#ifdef serial_debug
-       if (debug > 0) {
-          Serial.print("xPin = ");
-          Serial.print(xPosition);
-          Serial.print("  xPos = ");
-          Serial.print(xPos);
-          Serial.print("  yPin = ");
-          Serial.print(yPosition);
-          Serial.print("  yPos = ");
-          Serial.println(yPos);
-       }
-#endif
-      IS_MANUAL_MOVE = true;
-      if (IS_STEPPERS_ON)
-      {
-        consider_Manual_Move(xPosition, yPosition);
-      }
-    }
-    else
-    {
-      IS_MANUAL_MOVE = false;
-    }
+    considerMotorSweep();
 
     // This will take care of turning OFF the TFT's background light if the device is not used
     // for XXX amont of seconds and IS_IN_OPERATION = TRUE
@@ -1019,11 +936,6 @@ void loop(void)
         delay(100);
       }
 
-      // tx = (p.x - 257) / calx;
-      // ty = (p.y - 445) / caly;
-
-      // tx = (3914 - p.y) / caly;
-      // ty = (3957 - p.x) / calx;
       tx = (p.x - clx) / slope_x;
       ty = (p.y - cty) / slope_y;
 
@@ -1043,19 +955,19 @@ void loop(void)
       Serial.println(ty);
 #endif
     }
+
     considerTouchInput(tx, ty);
     considerDayNightMode();
 
     // OTHER UPDATES ?  ... if any
     // Happens every 2 seconds
-    if (((millis() - UPD_T) > 2000) && (IS_MANUAL_MOVE == false))
+    if (((millis() - UPD_T) > 2000) && (IS_MANUAL_RA_MOVE == false))
     {
       // #ifdef serial_debug
       // Serial.println("Regular updates");
       // #endif
       calculateLST_HA(); // Make sure it Updates the LST! used on Main Screen and When Calculating current Coords.
       considerTimeUpdates();
-      // considerDayNightMode();
       considerTempUpdates();
       // I need to make sure the Drives are not moved to track the stars,
       // if Object is below horizon ALT < 0 - Stop tracking.
@@ -1070,4 +982,164 @@ void loop(void)
       UPD_T = millis();
     }
   }
+
+#ifdef serial_debug
+  if (Serial.available() > 0)
+  {
+    char instr = Serial.read();
+    if (instr == 'a')
+    {
+      acc = Serial.parseInt();
+      Serial.print("Acc set to: ");
+      Serial.println(acc);
+      //RA_stepper.setAccelerationInStepsPerSecondPerSecond(acc);
+      //DEC_stepper.setAccelerationInStepsPerSecondPerSecond(acc);
+    }
+    if (instr == 'r')
+    {
+      int a = Serial.parseInt();
+      Serial.print("RA Target set to: ");
+      Serial.println(a);
+      RA_stepper.setTargetPositionInSteps(a);
+    }
+    if (instr == 'd')
+    {
+      int a = Serial.parseInt();
+      Serial.print("DEC Target set to: ");
+      Serial.println(a);
+      DEC_stepper.setSpeedInStepsPerSecond(speed);
+      DEC_stepper.setAccelerationInStepsPerSecondPerSecond(acc);
+
+      DEC_stepper.setTargetPositionInSteps(a);
+      IS_SERIAL_MOVE = true;
+    }
+    if (instr == 't')
+    {
+      int a = Serial.parseInt();
+      Serial.print("DEC Target set to: ");
+      Serial.println(a);
+      RA_stepper.setSpeedInStepsPerSecond(speed);
+      RA_stepper.setAccelerationInStepsPerSecondPerSecond(acc);
+
+      DEC_stepper.setTargetPositionInSteps(a);
+
+      IS_SERIAL_MOVE = true;
+    }
+    if (instr == 's')
+    {
+      speed = Serial.parseInt();
+      Serial.print("Speed set to: ");
+      Serial.println(speed);
+      //RA_stepper.setSpeedInStepsPerSecond(speed);
+      //DEC_stepper.setSpeedInStepsPerSecond(speed);
+    }
+    if (instr == 'p')
+    {
+      int a = Serial.parseInt();
+      Serial.print("Microsteps: ");
+      Serial.println(a);
+      setmStepsMode("R", a);
+      setmStepsMode("D", a);
+    }
+    if (instr == 'b')
+    {
+      int a = Serial.parseInt();
+      Serial.print("Backlash: ");
+      Serial.println(a);
+      RA_stepper.setBacklash(a);
+    }
+    if (instr == 'g')
+    {
+      debug = Serial.parseInt();
+      Serial.print("Serial debug set to: ");
+      Serial.println(debug);
+    }
+  }
+
+  int ready = 0;
+
+  if (IS_SERIAL_MOVE)
+  {
+    while (!RA_stepper.motionComplete() || !DEC_stepper.motionComplete())
+    {
+      if (debug == 8)
+      {
+        deb_print("Steps Left ");
+        deb_println(float(DEC_stepper.getCurrentPositionInSteps()));
+      }
+      RA_stepper.processMovement();
+      DEC_stepper.processMovement();
+
+      if (Serial.available() > 0)
+      {
+        char instr = Serial.read();
+        if (instr == 'a')
+        {
+          acc = Serial.parseInt();
+          Serial.print("Acc set to: ");
+          Serial.println(acc);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(acc);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(acc);
+        }
+        if (instr == 'r')
+        {
+          int a = Serial.parseInt();
+          Serial.print("RA Target set to: ");
+          Serial.println(a);
+          RA_stepper.setTargetPositionInSteps(a);
+        }
+        if (instr == 'd')
+        {
+          int a = Serial.parseInt();
+          Serial.print("DEC Target set to: ");
+          Serial.println(a);
+          DEC_stepper.setTargetPositionInSteps(a);
+        }
+        if (instr == 't')
+        {
+          int a = Serial.parseInt();
+          Serial.print("DEC Target set to: ");
+          Serial.println(a);
+          DEC_stepper.setTargetPositionInSteps(a);
+        }
+        if (instr == 's')
+        {
+          speed = Serial.parseInt();
+          Serial.print("Speed set to: ");
+          Serial.println(speed);
+          RA_stepper.setSpeedInStepsPerSecond(speed);
+          DEC_stepper.setSpeedInStepsPerSecond(speed);
+        }
+        if (instr == 'p')
+        {
+          int a = Serial.parseInt();
+          Serial.print("Microsteps: ");
+          Serial.println(a);
+          setmStepsMode("R", a);
+          setmStepsMode("D", a);
+        }
+        if (instr == 'b')
+        {
+          int a = Serial.parseInt();
+          Serial.print("Backlash: ");
+          Serial.println(a);
+          RA_stepper.setBacklash(a);
+        }
+        if (instr == 'g')
+        {
+          debug = Serial.parseInt();
+          Serial.print("Serial debug set to: ");
+          Serial.println(debug);
+        }
+      }
+
+    }; //end while !motion complete
+
+    IS_SERIAL_MOVE = false;
+    deb_print("Steps After slew: ");
+    deb_println(float(DEC_stepper.getCurrentPositionInSteps()));
+    ready = 0;
+  }; // end IS_SERIAL_MOVE == true
+
+#endif
 }

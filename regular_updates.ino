@@ -29,12 +29,12 @@ void considerTempUpdates() // Temperature && Humidity Updates && battery voltage
        float tHum = dht.readHumidity();
        float tTemp = dht.readTemperature();
        
-       #ifdef serial_debug
-        Serial.print("Hum = ");
-        Serial.println(tHum);
-        Serial.print("Temp = ");
-        Serial.println(tTemp);
-      #endif
+      //  #ifdef serial_debug
+      //   Serial.print("Hum = ");
+      //   Serial.println(tHum);
+      //   Serial.print("Temp = ");
+      //   Serial.println(tTemp);
+      // #endif
 
        
        if (isnan(tHum) || isnan(tTemp))
@@ -176,7 +176,7 @@ void considerTimeUpdates()
           tft.print("m    | HS:");
           tft.println(SLEW_RA_microsteps);
           tft.print("               | CS:");
-          tft.print(RA_microSteps);
+          tft.print(RA_stepper.getCurrentPositionInSteps());
       }   
           
       update_time = millis();
@@ -188,15 +188,15 @@ void considerTimeUpdates()
       
       tft.fillRect2(87,77,198,30, btn_d_border);
       tft.setCursor(108, 85);
-      tft.print(curr_DEC_lz);
+      tft.print(curr_HA_lz);
 
       tft.fillRect2(87,132,198,30, btn_d_border);
       tft.setCursor(115, 140);
-      tft.print(curr_HA_lz);
+      tft.print(curr_RA_lz);
 
       tft.fillRect2(87,187,198,30, btn_d_border);
       tft.setCursor(115, 195);
-      tft.print(curr_RA_lz);
+      tft.print(curr_DEC_lz);
 
       update_time = millis();  
 
@@ -336,8 +336,8 @@ void considerTimeUpdates()
             tft.setCursor(0, 300);
             tft.setTextSize(2);
 
-            delta_a_RA = (double(RA_microSteps) - double(HA_deci * HA_H_CONST))/double(HA_H_CONST);
-            delta_a_DEC = (double(DEC_microSteps) - double(SLEW_DEC_microsteps))/double(DEC_D_CONST);
+            delta_a_RA = (double(RA_stepper.getCurrentPositionInSteps()) - double(HA_deci * HA_H_CONST))/double(HA_H_CONST);
+            delta_a_DEC = (double(DEC_stepper.getCurrentPositionInSteps()) - double(SLEW_DEC_microsteps))/double(DEC_D_CONST);
           
             tft.print("Delta_RA: ");
             tft.print(delta_a_RA*60, 6);

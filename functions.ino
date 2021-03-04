@@ -32,6 +32,7 @@ void calculateLST_HA()
   double t_eph = (MJD0 - 51544.5) / 36525.0;
   double GMST = 6.697374558 + 1.0027379093 * ut + (8640184.812866 + (0.093104 - 0.0000062 * t_eph) * t_eph) * t_eph / 3600.0;
 
+
   LST = GMST + OBSERVATION_LONGITUDE / 15.0;
 
   //reduce it to 24 format
@@ -314,28 +315,25 @@ void selectOBJECT_M(int index_, int objects)
 void Sidereal_rate()
 {
   // when a manual movement of the drive happens. - This will avoid moving the steppers with a wrong Step Mode.
-  if ((IS_MANUAL_MOVE == false) && (IS_TRACKING) && (IS_STEPPERS_ON))
+  if ((IS_MANUAL_RA_MOVE == false) && (IS_TRACKING) && (IS_STEPPERS_ON))
   {
-    if (RA_mode_steps != MICROSteps)
+    if (RA_mode_steps != 1)
     {
       setmStepsMode("R", MICROSteps);
     }
-    digitalWrite(RA_DIR, STP_BACK);
-    PIOC->PIO_SODR = (1u << 9); // digitalWrite(RA_STP,HIGH);
-    delayMicroseconds(2);
-    PIOC->PIO_CODR = (1u << 9); // digitalWrite(RA_STP,LOW);
-    RA_microSteps += 1;
+
+    // digitalWrite(RA_DIR, STP_BACK);
+    // PIOC->PIO_SODR = (1u << 9); // digitalWrite(RA_STP,HIGH);
+    // delayMicroseconds(2);
+    // PIOC->PIO_CODR = (1u << 9); // digitalWrite(RA_STP,LOW);
+    // RA_microSteps += 1;
+
+    RA_stepper.makeOneStep(1); // step in positive direction
   }
 }
 
-void cosiderSlewTo()
+void calcSlewTo()
 {
-  //  int RA_microSteps, DEC_microSteps;
-  //  int SLEW_RA_microsteps, SLEW_DEC_microsteps;
-  //  INT data type -> -2,147,483,648 to 2,147,483,647
-  //  for more details see the XLS file with calculations
-  //...
-
   float HAH;
   float HAM;
   float DECD;
@@ -362,6 +360,18 @@ void cosiderSlewTo()
   SLEW_RA_microsteps = HA_decimal * HA_H_CONST;               // Hardware Specific Code
   SLEW_DEC_microsteps = DEC_90 - (DEC_decimal * DEC_D_CONST); // Hardware specific code
 
+  if (debug == 4)
+  {
+    deb_print("OBJ HAHour: ");
+    deb_print(HAHour);
+    deb_print(" HAMin: ");
+    deb_print(HAMin);
+    deb_print(" HA dec: ");
+    deb_print(HA_decimal);
+    deb_print(" DEC dec: ");
+    deb_println(DEC_decimal);
+  }
+
   if (IS_MERIDIAN_PASSED == true)
   {
     SLEW_DEC_microsteps *= -1;
@@ -369,429 +379,579 @@ void cosiderSlewTo()
 
   // If Home Position selected .... Make sure it goes to 0.
 
-  // DO I REALLY NEED THIS.... ????
-  // CONSIDER THE CODE WHEN YOU HAVE TIME!!!
-  int home_pos = 0;
   if ((OBJECT_RA_H == 12) && (OBJECT_RA_M == 0) && (OBJECT_DEC_D == 90) && (OBJECT_DEC_M == 0))
   {
-    SLEW_RA_microsteps = RA_90;
+    SLEW_RA_microsteps = RA_90; // Set home coordinates otherwise RA will slew to calculate Hour Angle
     SLEW_DEC_microsteps = 0;
     home_pos = 1;
   }
-
-  // Make the motors START slow and then speed-up - using the microsteps!
-  // Speed goes UP in 2.2 sec....then ..... FULL Speed ..... then....Slpeed goes Down for 3/4 Revolution of the drive
-  int delta_DEC_time = millis() - Slew_timer;
-  int delta_RA_timer = millis() - Slew_RA_timer;
-
-  if (delta_DEC_time >= 0 && delta_DEC_time < 900)
+  else
   {
-    if (DEC_mode_steps != 8)
-    {
-      setmStepsMode("D", 8);
-    }
-  }
-  if (delta_DEC_time >= 900 && delta_DEC_time < 1800)
-  {
-    if (DEC_mode_steps != 4)
-    {
-      setmStepsMode("D", 4);
-    }
-  }
-  if (delta_DEC_time >= 1800 && delta_DEC_time < 2200)
-  {
-    if (DEC_mode_steps != 2)
-    {
-      setmStepsMode("D", 2);
-    }
-  }
-  if (delta_DEC_time >= 2200)
-  {
-    if (DEC_mode_steps != 1)
-    {
-      setmStepsMode("D", 1);
-    }
-  }
-
-  if (delta_RA_timer >= 0 && delta_RA_timer < 900)
-  {
-    if (RA_mode_steps != 8)
-    {
-      setmStepsMode("R", 8);
-    }
-  }
-  if (delta_RA_timer >= 900 && delta_RA_timer < 1800)
-  {
-    if (RA_mode_steps != 4)
-    {
-      setmStepsMode("R", 4);
-    }
-  }
-  if (delta_RA_timer >= 1800 && delta_RA_timer < 2200)
-  {
-    if (RA_mode_steps != 2)
-    {
-      setmStepsMode("R", 2);
-    }
-  }
-  if (delta_RA_timer >= 2200)
-  {
-    if (RA_mode_steps != 1)
-    {
-      setmStepsMode("R", 1);
-    }
-  }
-
-  int delta_RA_steps = SLEW_RA_microsteps - RA_microSteps;
-  int delta_DEC_steps = SLEW_DEC_microsteps - DEC_microSteps;
-
-  // Make the motors SLOW DOWN and then STOP - using the microsteps!
-  // Speed goes DOWN in 2.2 sec....then ..... FULL Speed ..... then....Speed goes Down for 3/4 Revolution of the drive
-
-  if ((abs(delta_DEC_steps) >= 1200) && (abs(delta_DEC_steps) <= 3000))
-  {
-    if (DEC_mode_steps != 4)
-    {
-      setmStepsMode("D", 4);
-    }
-  }
-  if ((abs(delta_DEC_steps) < 1200))
-  {
-    if (DEC_mode_steps != 8)
-    {
-      setmStepsMode("D", 8);
-    }
-  }
-  if ((abs(delta_RA_steps) >= 1200) && (abs(delta_RA_steps) <= 3000))
-  {
-    if (RA_mode_steps != 4)
-    {
-      setmStepsMode("R", 4);
-    }
-  }
-  if (abs(delta_RA_steps) < 1200)
-  {
-    if (RA_mode_steps != 8)
-    {
-      setmStepsMode("R", 8);
-      RA_move_ending = 1;
-    }
-  }
-
-  // Taking care of the RA Slew_To.... and make sure it ends Last
-  // NB: This way we can jump to TRACK and be sure the RA is on target
-  if (abs(delta_RA_steps) >= abs(delta_DEC_steps))
-  {
-    if (RA_finish_last == 0)
-    {
-      RA_finish_last = 1;
-      Slew_RA_timer = millis();
-    }
-  }
-
-  // RA_STP, HIGH  51 C9 - PIOC->PIO_SODR = (1u << 9)
-  // RA_STP, LOW   51 C9 - PIOC->PIO_CODR = (1u << 9)
-  // DEC_STP, HIGH 35 D0 - PIOD->PIO_SODR = (1u << 0)
-  // DEC_STP, LOW  35 D0 - PIOD->PIO_CODR = (1u << 0)
-
-  if ((IS_OBJECT_RA_FOUND == false) && (RA_finish_last == 1))
-  {
-    if (SLEW_RA_microsteps >= (RA_microSteps - RA_mode_steps) && SLEW_RA_microsteps <= (RA_microSteps + RA_mode_steps))
-    {
-      IS_OBJECT_RA_FOUND = true;
-    }
-    else
-    {
-      if (SLEW_RA_microsteps > RA_microSteps)
-      {
-        digitalWrite(RA_DIR, STP_BACK);
-        //digitalWrite(RA_STP,HIGH);
-        //digitalWrite(RA_STP,LOW);
-        PIOC->PIO_SODR = (1u << 9);
-        delayMicroseconds(5);
-        PIOC->PIO_CODR = (1u << 9);
-        RA_microSteps += RA_mode_steps;
-      }
-      else
-      {
-        digitalWrite(RA_DIR, STP_FWD);
-        //digitalWrite(RA_STP,HIGH);
-        //digitalWrite(RA_STP,LOW);
-        PIOC->PIO_SODR = (1u << 9);
-        delayMicroseconds(5);
-        PIOC->PIO_CODR = (1u << 9);
-        RA_microSteps -= RA_mode_steps;
-      }
-    }
-  }
-
-  // Taking care of the DEC Slew_To....
-  if (IS_OBJECT_DEC_FOUND == false)
-  {
-    if (SLEW_DEC_microsteps >= (DEC_microSteps - DEC_mode_steps) && SLEW_DEC_microsteps <= (DEC_microSteps + DEC_mode_steps))
-    {
-      IS_OBJECT_DEC_FOUND = true;
-    }
-    else
-    {
-      if (SLEW_DEC_microsteps > DEC_microSteps)
-      {
-        digitalWrite(DEC_DIR, STP_BACK);
-        //digitalWrite(DEC_STP,HIGH);
-        //digitalWrite(DEC_STP,LOW);
-        PIOD->PIO_SODR = (1u << 0);
-        delayMicroseconds(5);
-        PIOD->PIO_CODR = (1u << 0);
-        DEC_microSteps += DEC_mode_steps;
-      }
-      else
-      {
-        digitalWrite(DEC_DIR, STP_FWD);
-        //digitalWrite(DEC_STP,HIGH);
-        //digitalWrite(DEC_STP,LOW);
-        PIOD->PIO_SODR = (1u << 0);
-        delayMicroseconds(5);
-        PIOD->PIO_CODR = (1u << 0);
-        DEC_microSteps -= DEC_mode_steps;
-      }
-    }
-  }
-
-  // Check if Object is found on both Axes...
-  if (IS_OBJECT_RA_FOUND == true && IS_OBJECT_DEC_FOUND == true)
-  {
-    IS_OBJ_FOUND = true;
-    RA_move_ending = 0;
-
-    if ((home_pos == 0) && (ALT > 0))
-    {
-      IS_TRACKING = true;
-      setmStepsMode("R", MICROSteps);
-      if (Tracking_type == 1)
-      { // 1: Sidereal, 2: Solar, 0: Lunar;
-        Timer3.start(Clock_Sidereal);
-      }
-      else if (Tracking_type == 2)
-      {
-        Timer3.start(Clock_Solar);
-      }
-      else if (Tracking_type == 0)
-      {
-        Timer3.start(Clock_Lunar);
-      }
-    }
-    if (IS_SOUND_ON)
-    {
-      SoundOn(note_C, 64);
-    }
-    Slew_RA_timer = 0;
-    RA_finish_last = 0;
-    if (IS_BT_MODE_ON == true)
-    {
-      Serial3.println("Slew done! Object in scope!");
-    }
-    if (IS_IN_OPERATION == true)
-    {
-      drawMainScreen();
-    }
-    else
-    {
-      drawConstelationScreen(SELECTED_STAR);
-    }
+    home_pos = 0;
   }
 }
 
-void step_RA()
+void cosiderSlewTo()
 {
-  PIOC->PIO_SODR = (1u << 9); //digitalWrite(RA_STP, HIGH);
-  delayMicroseconds(5);
-  PIOC->PIO_CODR = (1u << 9); //digitalWrite(RA_STP, LOW);
+  //  int RA_microSteps, DEC_microSteps;
+  //  int SLEW_RA_microsteps, SLEW_DEC_microsteps;
+  //  INT data type -> -2,147,483,648 to 2,147,483,647
+  //  for more details see the XLS file with calculations
+  //...
+
+  calcSlewTo();
+
+
+
+
+  // Set initial stepper position
+
+  // // Set acceleration
+  // RA_stepper.setSpeedInStepsPerSecond(14000);
+  // DEC_stepper.setSpeedInStepsPerSecond(14000);
+
+  // RA_stepper.setAccelerationInStepsPerSecondPerSecond(10000);
+  // DEC_stepper.setAccelerationInStepsPerSecondPerSecond(10000);
+
+  // // set steps mode
+  // setmStepsMode("R", 8);
+  // setmStepsMode("D", 8);
+
+  // deb_print("Current pos RA: ");
+  // deb_print(float(RA_stepper.getCurrentPositionInSteps()));
+  // deb_print(" Target pos RA: ");
+  // deb_print(SLEW_RA_microsteps);
+  // deb_print(" Current pos DEC: ");
+  // deb_print(float(DEC_stepper.getCurrentPositionInSteps()));
+  // deb_print(" Target pos RA: ");
+  // deb_println(SLEW_DEC_microsteps);
+
+  // // Start slew:
+
+  // // Set target position
+  // RA_stepper.setTargetPositionInSteps(SLEW_RA_microsteps);
+  // DEC_stepper.setTargetPositionInSteps(SLEW_DEC_microsteps);
+
+  deb_print("Target pos RA: ");
+  deb_print(SLEW_RA_microsteps);
+  deb_print(" Target pos DEC: ");
+  deb_println(SLEW_DEC_microsteps);
+
+  setmStepsMode("D", 8);
+  setmStepsMode("R", 8);
+
+  // initial slew
+  moveXYWithCoordination(SLEW_RA_microsteps, SLEW_DEC_microsteps, speed, acc);
+  
+  // recalc coordinates
+  calculateLST_HA();
+  calcSlewTo();
+
+  setmStepsMode("D", MICROSteps);
+  setmStepsMode("R", MICROSteps);
+  // adjust final slew to recalculated coordinates
+  moveXYWithCoordination(SLEW_RA_microsteps, SLEW_DEC_microsteps, speed/10, acc/10);
+
+
+  // while (!RA_stepper.motionComplete() || !DEC_stepper.motionComplete())
+  // {
+  //   int delta_RA_steps = SLEW_RA_microsteps - RA_stepper.getCurrentPositionInSteps();
+  //   int delta_DEC_steps = SLEW_DEC_microsteps - DEC_stepper.getCurrentPositionInSteps();
+
+  //   // if (debug == 2)
+  //   // {
+  //   //   deb_print(" delta_RA_steps: ");
+  //   //   deb_print(delta_RA_steps);
+  //   //   // deb_print(" RA_mode_steps: ");
+  //   //   // deb_print(RA_mode_steps);
+  //   //   deb_print(" delta_DEC_steps: ");
+  //   //   deb_print(delta_DEC_steps);
+  //   //   // deb_print(" DEC_mode_steps: ");
+  //   //   // deb_println(DEC_mode_steps);
+  //   // }
+
+  //   // if (abs(delta_RA_steps) <= 2 ) {
+  //   //   setmStepsMode("R", MICROSteps);
+  //   // }
+  //   // if (abs(delta_DEC_steps) <= 2 ) {
+  //   //   setmStepsMode("D", MICROSteps);
+  //   // }
+
+  //   // Make sure RA finishes last:
+  //   if (abs(delta_RA_steps) >= abs(delta_DEC_steps))
+  //   {
+  //     if (abs(delta_RA_steps) < 100)
+  //     {
+  //       // recalculate HA at end of slew to get to the exact position
+  //       calculateLST_HA();
+  //       calcSlewTo();
+  //       // Set target position
+  //       RA_stepper.setTargetPositionInSteps(SLEW_RA_microsteps);
+  //       DEC_stepper.setTargetPositionInSteps(SLEW_DEC_microsteps);
+  //       // if (debug == 2 || (debug == 3 && delta_RA_steps < 150))
+  //       // {
+  //       //   deb_print("Current pos RA: ");
+  //       //   deb_print(float(RA_stepper.getCurrentPositionInSteps()));
+  //       //   deb_print(" Target pos RA: ");
+  //       //   deb_print(SLEW_RA_microsteps / 2);
+  //       //   deb_print(" Current pos DEC: ");
+  //       //   deb_print(float(DEC_stepper.getCurrentPositionInSteps()));
+  //       //   deb_print(" Target pos RA: ");
+  //       //   deb_println(SLEW_DEC_microsteps / 2);
+  //       // }
+  //     }
+
+  //     RA_stepper.processMovement();
+  //   }
+
+  //   DEC_stepper.processMovement();
+  // }
+
+  IS_OBJ_FOUND = true;
+  IS_OBJECT_RA_FOUND = true;  // check where this is used
+  IS_OBJECT_DEC_FOUND = true; // check where this is used
+
+  if ((home_pos == 0) && (ALT > 0))
+  {
+    IS_TRACKING = true;
+    RA_stepper.setDirectionBacklash(1);
+
+    if (Tracking_type == 1)
+    { // 1: Sidereal, 2: Solar, 0: Lunar;
+      Timer3.start(Clock_Sidereal);
+    }
+    else if (Tracking_type == 2)
+    {
+      Timer3.start(Clock_Solar);
+    }
+    else if (Tracking_type == 0)
+    {
+      Timer3.start(Clock_Lunar);
+    }
+  }
+  if (IS_SOUND_ON)
+  {
+    SoundOn(note_C, 64);
+  }
+  //Slew_RA_timer = 0;
+  //RA_finish_last = 0;
+
+  if (IS_BT_MODE_ON == true)
+  {
+    Serial3.println("Slew done! Object in scope!");
+  }
+
+  deb_println("Slew done! Object in scope!");
+
+  if (IS_IN_OPERATION == true)
+  {
+    drawMainScreen();
+  }
+  else
+  {
+    drawConstelationScreen(SELECTED_STAR);
+  }
 }
 
-void step_DEC()
+
+//
+// move both X & Y motors together in a coordinated way, such that they each 
+// start and stop at the same time, even if one motor moves a greater distance
+//
+void moveXYWithCoordination(long RA_target, long DEC_target, float speedInStepsPerSecond, float accelerationInStepsPerSecondPerSecond)
 {
-  PIOD->PIO_SODR = (1u << 0); //digitalWrite(DEC_STP, HIGH);
-  delayMicroseconds(5);
-  PIOD->PIO_CODR = (1u << 0); //digitalWrite(DEC_STP, LOW);
+  float speedInStepsPerSecond_X;
+  float accelerationInStepsPerSecondPerSecond_X;
+  float speedInStepsPerSecond_Y;
+  float accelerationInStepsPerSecondPerSecond_Y;
+  long absRA_steps;
+  long absDEC_steps;
+
+  //
+  // setup initial speed and acceleration values
+  //
+  speedInStepsPerSecond_X = speedInStepsPerSecond;
+  accelerationInStepsPerSecondPerSecond_X = accelerationInStepsPerSecondPerSecond;
+  
+  speedInStepsPerSecond_Y = speedInStepsPerSecond;
+  accelerationInStepsPerSecondPerSecond_Y = accelerationInStepsPerSecondPerSecond;
+
+
+  //
+  // determine how many steps each motor is moving
+  //
+  // if (RA_steps >= 0)
+  //   absRA_steps = RA_steps;
+  // else
+  //   absRA_steps = -RA_steps;
+ 
+  // if (DEC_steps >= 0)
+  //   absDEC_steps = DEC_steps;
+  // else
+  //   absDEC_steps = -DEC_steps;
+
+  absRA_steps=abs(RA_target - RA_stepper.getCurrentPositionInSteps());
+  absDEC_steps=abs(DEC_target - DEC_stepper.getCurrentPositionInSteps());
+
+
+
+  //
+  // determine which motor is traveling the farthest, then slow down the
+  // speed rates for the motor moving the shortest distance
+  //
+  if ((absRA_steps > absDEC_steps) && (absRA_steps != 0))
+  {
+    //
+    // slow down the motor traveling less far
+    //
+    float scaler = (float) absDEC_steps / (float) absRA_steps;
+    speedInStepsPerSecond_Y = speedInStepsPerSecond_Y * scaler;
+    accelerationInStepsPerSecondPerSecond_Y = accelerationInStepsPerSecondPerSecond_Y * scaler;
+    
+    deb_println("RA steps more than DEC");
+    deb_print("Scalar: ");
+    deb_println(scaler);
+    
+  }
+  
+  
+
+  if ((absDEC_steps > absRA_steps) && (absDEC_steps != 0))
+  {
+    //
+    // slow down the motor traveling less far
+    //
+    float scaler = (float) absRA_steps / (float) absDEC_steps;
+    speedInStepsPerSecond_X = speedInStepsPerSecond_X * scaler;
+    accelerationInStepsPerSecondPerSecond_X = accelerationInStepsPerSecondPerSecond_X * scaler;
+
+    deb_println("DEC steps more than RA");
+    deb_print("Scalar: ");
+    deb_println(scaler);
 }
 
-// void consider_Manual_Move(int xP, int yP)
-// {
-//   if ((xP >= 0) && (xP <= 150))
-//   {
-//     setmStepsMode("R", 1);
-//     digitalWrite(RA_DIR, STP_BACK);
-//     step_RA();
-//     RA_microSteps += RA_mode_steps;
-//   }
-//   else if ((xP > 150) && (xP <= 320))
-//   {
-//     setmStepsMode("R", 4);
-//     digitalWrite(RA_DIR, STP_BACK);
-//     step_RA();
-//     RA_microSteps += RA_mode_steps;
-//   }
-//   else if ((xP > 320) && (xP <= 470))
-//   {
-//     setmStepsMode("R", 8);
-//     digitalWrite(RA_DIR, STP_BACK);
-//     step_RA();
-//     RA_microSteps += RA_mode_steps;
-//   }
-//   else if ((xP > 620) && (xP <= 770))
-//   {
-//     setmStepsMode("R", 8);
-//     digitalWrite(RA_DIR, STP_FWD);
-//     step_RA();
-//     RA_microSteps -= RA_mode_steps;
-//   }
-//   else if ((xP > 770) && (xP <= 870))
-//   {
-//     setmStepsMode("R", 4);
-//     digitalWrite(RA_DIR, STP_FWD);
-//     step_RA();
-//     RA_microSteps -= RA_mode_steps;
-//   }
-//   else if ((xP > 870) && (xP <= 1023))
-//   {
-//     setmStepsMode("R", 1);
-//     digitalWrite(RA_DIR, STP_FWD);
-//     step_RA();
-//     RA_microSteps -= RA_mode_steps;
-//   }
+  deb_print("speedInStepsPerSecond_X: ");
+  deb_print(speedInStepsPerSecond_X);
+  deb_print("  accelerationInStepsPerSecondPerSecond_X: ");
+  deb_println(accelerationInStepsPerSecondPerSecond_X);
+  deb_print("speedInStepsPerSecond_Y: ");
+  deb_print(speedInStepsPerSecond_Y);
+  deb_print("  accelerationInStepsPerSecondPerSecond_Y: ");
+  deb_println(accelerationInStepsPerSecondPerSecond_Y);
 
-//   if ((yP >= 0) && (yP <= 150))
-//   {
-//     setmStepsMode("D", 1);
-//     digitalWrite(DEC_DIR, STP_BACK);
-//     step_DEC();
-//     DEC_microSteps += DEC_mode_steps;
-//   }
-//   else if ((yP > 150) && (yP <= 320))
-//   {
-//     setmStepsMode("D", 4);
-//     digitalWrite(DEC_DIR, STP_BACK);
-//     step_DEC();
-//     DEC_microSteps += DEC_mode_steps;
-//   }
-//   else if ((yP > 320) && (yP <= 470))
-//   {
-//     setmStepsMode("D", 8);
-//     digitalWrite(DEC_DIR, STP_BACK);
-//     step_DEC();
-//     DEC_microSteps += DEC_mode_steps;
-//   }
-//   else if ((yP > 620) && (yP <= 770))
-//   {
-//     setmStepsMode("D", 8);
-//     digitalWrite(DEC_DIR, STP_FWD);
-//     step_DEC();
-//     DEC_microSteps -= DEC_mode_steps;
-//   }
-//   else if ((yP > 770) && (yP <= 870))
-//   {
-//     setmStepsMode("D", 4);
-//     digitalWrite(DEC_DIR, STP_FWD);
-//     step_DEC();
-//     DEC_microSteps -= DEC_mode_steps;
-//   }
-//   else if ((yP > 870) && (yP <= 1023))
-//   {
-//     setmStepsMode("D", 1);
-//     digitalWrite(DEC_DIR, STP_FWD);
-//     step_DEC();
-//     DEC_microSteps -= DEC_mode_steps;
-//   }
-//   delayMicroseconds(del);
-// }
+  
+  //
+  // setup the motion for the X motor
+  //
+  RA_stepper.setSpeedInStepsPerSecond(speedInStepsPerSecond_X);
+  RA_stepper.setAccelerationInStepsPerSecondPerSecond(accelerationInStepsPerSecondPerSecond_X);
+  //RA_stepper.setTargetPositionRelativeInSteps(RA_target);
+  RA_stepper.setTargetPositionInSteps(RA_target);
 
-void consider_Manual_Move(int xP, int yP)
+
+  //
+  // setup the motion for the Y motor
+  //
+  DEC_stepper.setSpeedInStepsPerSecond(speedInStepsPerSecond_Y);
+  DEC_stepper.setAccelerationInStepsPerSecondPerSecond(accelerationInStepsPerSecondPerSecond_Y);
+  //DEC_stepper.setTargetPositionRelativeInSteps(DEC_target);
+  DEC_stepper.setTargetPositionInSteps(DEC_target);
+
+
+  //
+  // now execute the moves, looping until both motors have finished
+  //
+  while((!RA_stepper.motionComplete()) || (!DEC_stepper.motionComplete()))
+  {
+    RA_stepper.processMovement();
+    DEC_stepper.processMovement();
+  }
+}
+
+void considerManualMove()
 {
-  
-  switch (xPos) {
-    case 1:
-      setmStepsMode("R", 1);
-      digitalWrite(RA_DIR, STP_BACK);
-      step_RA();
-      RA_microSteps += RA_mode_steps;
-      break;
-    case 2:
-      setmStepsMode("R", 4);
-      digitalWrite(RA_DIR, STP_BACK);
-      step_RA();
-      RA_microSteps += RA_mode_steps;
-      break;
-    case 3:
-      setmStepsMode("R", 16);
-      digitalWrite(RA_DIR, STP_BACK);
-      step_RA();
-      RA_microSteps += RA_mode_steps;
-      break;
 
-    case 5:
-      setmStepsMode("R", 16);
-      digitalWrite(RA_DIR, STP_FWD);
-      step_RA();
-      RA_microSteps -= RA_mode_steps;
-      break;
-    case 6:
-      setmStepsMode("R", 4);
-      digitalWrite(RA_DIR, STP_FWD);
-      step_RA();
-      RA_microSteps -= RA_mode_steps;
-      break;
-    case 7:
-      setmStepsMode("R", 1);
-      digitalWrite(RA_DIR, STP_FWD);
-      step_RA();
-      RA_microSteps -= RA_mode_steps;
-      break;
+  if (IS_MANUAL_DEC_MOVE || IS_MANUAL_RA_MOVE)
+  {
+    while (!RA_stepper.motionComplete() || !DEC_stepper.motionComplete())
+    {
+      RA_stepper.processMovement();
+      DEC_stepper.processMovement();
+
+      // limit updating of JoyStick data during manual movement
+      if (micros() - last_adc_read > 10000)
+      {
+        last_adc_read += 10000;
+        updateJoystick();
+      }
+
+      // }
+    }
+
+    IS_MANUAL_RA_MOVE = false;
+    IS_MANUAL_DEC_MOVE = false;
   }
-  switch (yPos) {
-    case 1:
-      setmStepsMode("D", 1);
-      digitalWrite(DEC_DIR, STP_BACK);
-      step_DEC();
-      DEC_microSteps += DEC_mode_steps;
-      break;
-    case 2:
-      setmStepsMode("D", 4);
-      digitalWrite(DEC_DIR, STP_BACK);
-      step_DEC();
-      DEC_microSteps += DEC_mode_steps;
-      break;
-    case 3:
-      setmStepsMode("D", 16);
-      digitalWrite(DEC_DIR, STP_BACK);
-      step_DEC();
-      DEC_microSteps += DEC_mode_steps;
-      break;
+}
 
-    case 5:
-      setmStepsMode("D", 16);
-      digitalWrite(DEC_DIR, STP_FWD);
-      step_DEC();
-      DEC_microSteps -= DEC_mode_steps;
-      break;
-    case 6:
-      setmStepsMode("D", 4);
-      digitalWrite(DEC_DIR, STP_FWD);
-      step_DEC();
-      DEC_microSteps -= DEC_mode_steps;
-      break;
-    case 7:
-      setmStepsMode("D", 1);
-      digitalWrite(DEC_DIR, STP_FWD);
-      step_DEC();
-      DEC_microSteps -= DEC_mode_steps;
-      break;
+void updateJoystick()
+{
+  // JOYSTICK Movements ? ... if any
 
+  if (adc_channel == 0)
+  {
+    xPosition = analogRead(xPin);
+
+    if ((xPosition < x_cal - 50) || (xPosition > x_cal + 50) || xPos != 4)
+    {
+
+      switch (xPos)
+      {
+      case 1:
+        if (xPosition > 20)
+        {
+          xPos = 2;
+          RA_stepper.setSpeedInStepsPerSecond(3500);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(25000);
+        }
+        break;
+      case 2:
+        if (xPosition > 255)
+        {
+          xPos = 3;
+          RA_stepper.setSpeedInStepsPerSecond(500);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(25000);
+        }
+        if (xPosition < 10)
+        {
+          xPos = 1;
+          RA_stepper.setSpeedInStepsPerSecond(13000);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(7500);
+        }
+        break;
+      case 3:
+        if (xPosition > 461)
+        {
+          xPos = 4;
+
+          deb_print("Current RA microstep: ");
+          deb_println(float(RA_stepper.getCurrentPositionInSteps()));
+
+          RA_stepper.hardStop();
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(5000);
+          setmStepsMode("R", MICROSteps);
+          //IS_MANUAL_RA_MOVE = false;
+        }
+        if (xPosition < 235)
+        {
+          xPos = 2;
+          RA_stepper.setSpeedInStepsPerSecond(3500);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(7500);
+        }
+        break;
+      case 4:
+        if (xPosition > 571)
+        {
+          xPos = 5;
+          RA_stepper.setSpeedInStepsPerSecond(500);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(5000);
+          RA_stepper.setTargetPositionInSteps(-10000000);
+          setmStepsMode("R", 8);
+          IS_MANUAL_RA_MOVE = true;
+        }
+        if (xPosition < 451)
+        {
+          xPos = 3;
+          RA_stepper.setSpeedInStepsPerSecond(500);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(5000);
+          RA_stepper.setTargetPositionInSteps(10000000);
+          setmStepsMode("R", 8);
+          IS_MANUAL_RA_MOVE = true;
+        }
+        break;
+      case 5:
+        if (xPosition > 806)
+        {
+          xPos = 6;
+          RA_stepper.setSpeedInStepsPerSecond(3500);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(7500);
+        }
+        if (xPosition < 561)
+        {
+          xPos = 4;
+
+          deb_print("Current RA microstep: ");
+          deb_println(float(RA_stepper.getCurrentPositionInSteps()));
+
+          RA_stepper.hardStop();
+
+          // if tracking is enabled, compensate backlash
+          if (IS_TRACKING)
+          {
+            RA_stepper.setDirectionBacklash(1);
+          }
+
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(25000);
+          setmStepsMode("R", MICROSteps);
+          //IS_MANUAL_RA_MOVE = false;
+        }
+        break;
+      case 6:
+        if (xPosition > 1013)
+        {
+          xPos = 7;
+          RA_stepper.setSpeedInStepsPerSecond(13000);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(7500);
+        }
+        if (xPosition < 786)
+        {
+          xPos = 5;
+          RA_stepper.setSpeedInStepsPerSecond(500);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(25000);
+        }
+        break;
+      case 7:
+        if (xPosition < 1003)
+        {
+          xPos = 6;
+          RA_stepper.setSpeedInStepsPerSecond(3500);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(25000);
+        }
+        break;
+      }
+    }
+
+    adc_channel = 1;
   }
-  
-  delayMicroseconds(650);
-  
-  
-  
+  else
+  {
+    yPosition = analogRead(yPin);
+
+    if ((yPosition < y_cal - 50) || (yPosition > y_cal + 50) || yPos != 4)
+    {
+
+      switch (yPos)
+      {
+      case 1:
+        if (yPosition > 20)
+        {
+          yPos = 2;
+          DEC_stepper.setSpeedInStepsPerSecond(3500);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(25000);
+        }
+        break;
+      case 2:
+        if (yPosition > 255)
+        {
+          yPos = 3;
+          DEC_stepper.setSpeedInStepsPerSecond(500);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(25000);
+        }
+        if (yPosition < 10)
+        {
+          yPos = 1;
+          DEC_stepper.setSpeedInStepsPerSecond(13000);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(7500);
+        }
+        break;
+      case 3:
+        if (yPosition > 461)
+        {
+          yPos = 4;
+
+          deb_print("Current DEC microstep: ");
+          deb_println(float(DEC_stepper.getCurrentPositionInSteps()));
+
+          DEC_stepper.hardStop();
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(5000);
+          setmStepsMode("D", MICROSteps);
+        }
+        if (yPosition < 235)
+        {
+          yPos = 2;
+          DEC_stepper.setSpeedInStepsPerSecond(3500);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(7500);
+        }
+        break;
+      case 4:
+        if (yPosition > 571)
+        {
+          yPos = 5;
+          DEC_stepper.setSpeedInStepsPerSecond(500);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(5000);
+          DEC_stepper.setTargetPositionInSteps(-10000000);
+          setmStepsMode("D", 8);
+          IS_MANUAL_DEC_MOVE = true;
+        }
+        if (yPosition < 451)
+        {
+          yPos = 3;
+          DEC_stepper.setSpeedInStepsPerSecond(500);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(5000);
+          DEC_stepper.setTargetPositionInSteps(10000000);
+          setmStepsMode("D", 8);
+          IS_MANUAL_DEC_MOVE = true;
+        }
+        break;
+      case 5:
+        if (yPosition > 806)
+        {
+          yPos = 6;
+          DEC_stepper.setSpeedInStepsPerSecond(3500);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(7500);
+        }
+        if (yPosition < 561)
+        {
+          yPos = 4;
+
+          deb_print("Current DEC microstep: ");
+          deb_println(float(DEC_stepper.getCurrentPositionInSteps()));
+
+          DEC_stepper.hardStop();
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(25000);
+          setmStepsMode("D", MICROSteps);
+        }
+        break;
+      case 6:
+        if (yPosition > 1013)
+        {
+          yPos = 7;
+          DEC_stepper.setSpeedInStepsPerSecond(13000);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(7500);
+        }
+        if (yPosition < 786)
+        {
+          yPos = 5;
+          DEC_stepper.setSpeedInStepsPerSecond(500);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(25000);
+        }
+        break;
+      case 7:
+        if (yPosition < 1003)
+        {
+          yPos = 6;
+          DEC_stepper.setSpeedInStepsPerSecond(3500);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(25000);
+        }
+        break;
+      }
+    }
+
+    adc_channel = 0;
+  }
+
+#ifdef serial_debug
+  if (debug == 6)
+  {
+    Serial.print("xPin = ");
+    Serial.print(xPosition);
+    Serial.print("  xPos = ");
+    Serial.print(xPos);
+    Serial.print("  yPin = ");
+    Serial.print(yPosition);
+    Serial.print("  yPos = ");
+    Serial.println(yPos);
+  }
+#endif
 }
 
 // Keep the GPS sensor "fed" until we find the data.
@@ -892,6 +1052,7 @@ void setmStepsMode(char *P, int mod)
       PIOC->PIO_SODR = (1u << 16);
     }
     RA_mode_steps = MICROSteps / mod;
+    RA_stepper.setStepsMult(RA_mode_steps);
   }
   if (P == "D")
   { // Set RA modes
@@ -952,6 +1113,7 @@ void setmStepsMode(char *P, int mod)
       PIOA->PIO_SODR = (1u << 7);
     }
     DEC_mode_steps = MICROSteps / mod;
+    DEC_stepper.setStepsMult(DEC_mode_steps);
   }
   delayMicroseconds(5); // Makes sure the DRV8825 can follow
 }
@@ -993,7 +1155,7 @@ void Current_RA_DEC()
   // DEC
 
   // To ALSO correct for the Star Alignment offset
-  float tmp_dec = (float(DEC_90) - float(abs(DEC_microSteps))) / float(DEC_D_CONST);
+  float tmp_dec = (float(DEC_90) - float(abs(DEC_stepper.getCurrentPositionInSteps()))) / float(DEC_D_CONST);
   tmp_dec -= delta_a_DEC;
   int sDEC_tel = 0;
   if (tmp_dec < 0)
@@ -1019,9 +1181,10 @@ void Current_RA_DEC()
 
   // HOUR ANGLE
   // To correct for the Star Alignment
-  double tmp_ha = double(RA_microSteps) / double(HA_H_CONST);
+  // double tmp_ha = double(RA_microSteps) / double(HA_H_CONST);
+  double tmp_ha = double(RA_stepper.getCurrentPositionInSteps()) / double(HA_H_CONST);
   tmp_ha -= delta_a_RA;
-  if (DEC_microSteps > 0)
+  if (DEC_stepper.getCurrentPositionInSteps() > 0)
   {
     tmp_ha += 180;
   }
@@ -1127,121 +1290,6 @@ void DrawButton(int X, int Y, int Width, int Height, String Caption, int16_t Bod
 
 #define BUFFPIXEL 80
 
-// void bmpDraw(char *filename, uint8_t x, uint16_t y) {
-
-//   File     bmpFile;
-//   int      bmpWidth, bmpHeight;   // W+H in pixels
-//   uint8_t  bmpDepth;              // Bit depth (currently must be 24)
-//   uint32_t bmpImageoffset;        // Start of image data in file
-//   uint32_t rowSize;               // Not always = bmpWidth; may have padding
-//   uint8_t  sdbuffer[3 * BUFFPIXEL]; // pixel buffer (R+G+B per pixel)
-//   uint8_t  buffidx = sizeof(sdbuffer); // Current position in sdbuffer
-//   boolean  goodBmp = false;       // Set to true on valid header parse
-//   boolean  flip    = true;        // BMP is stored bottom-to-top
-//   int      w, h, row, col;
-//   uint8_t  r, g, b;
-//   uint32_t pos = 0, startTime = millis();
-
-//   if ((x >= tft.width()) || (y >= tft.height())) return;
-//   // Open requested file on SD card
-//   if ((bmpFile = SD.open(filename)) == NULL)
-//   {
-//     #ifdef serial_debug
-//       Serial.println("file not found on the SD card");
-//     #endif
-
-//     return;
-//   }
-//   // Parse BMP header
-//   if (read16(bmpFile) == 0x4D42 || read16(bmpFile) == 0x424D) // BMP signature
-//   {
-//     #ifdef serial_debug
-//       Serial.print("BMP file found.\nImage offset: ");
-//       Serial.println(read32(bmpFile), HEX);
-//     #else
-//       read32(bmpFile); //dummy read
-//     #endif
-//     (void)read32(bmpFile); // Read & ignore creator bytes
-//     bmpImageoffset = read32(bmpFile); // Start of image data
-
-//     // Read DIB header
-//     #ifdef serial_debug
-//       Serial.print("Image DIB header: ");
-//       Serial.println(read32(bmpFile), HEX);
-//     #else
-//       read32(bmpFile);  //dummy read
-//     #endif
-//     bmpWidth  = read32(bmpFile);
-//     bmpHeight = read32(bmpFile);
-//     if (read16(bmpFile) == 1) // # planes -- must be '1'
-//     {
-//       bmpDepth = read16(bmpFile); // bits per pixel
-
-//       #ifdef serial_debug
-//         Serial.println("one plane file");
-//         Serial.print("bmpDepth: ");
-//         Serial.println(bmpDepth);
-//       #endif
-
-//       if ((bmpDepth == 24) && (read32(bmpFile) == 0)) // 0 = uncompressed
-//       {
-//         goodBmp = true; // Supported BMP format -- proceed!
-//         // BMP rows are padded (if needed) to 4-byte boundary
-//         rowSize = (bmpWidth * 3 + 3) & ~3;
-
-//         // If bmpHeight is negative, image is in top-down order.
-//         // This is not canon but has been observed in the wild.
-//         if (bmpHeight < 0)
-//         {
-//           bmpHeight = -bmpHeight;
-//           flip      = false;
-//         }
-//         // Crop area to be loaded
-//         w = bmpWidth;
-//         h = bmpHeight;
-//         if ((x + w - 1) >= tft.width())  w = tft.width()  - x;
-//         if ((y + h - 1) >= tft.height()) h = tft.height() - y;
-
-//         // Set TFT address window to clipped image bounds
-//         tft.setAddrWindow(x, y, x + w - 1, y + h - 1);
-
-//         for (row = 0; row < h; row++) { // For each scanline...
-
-//           if (flip) // Bitmap is stored bottom-to-top order (normal BMP)
-//             pos = bmpImageoffset + (bmpHeight - 1 - row) * rowSize;
-//           else     // Bitmap is stored top-to-bottom
-//             pos = bmpImageoffset + row * rowSize;
-//           if (bmpFile.position() != pos)
-//           { // Need seek?
-//             bmpFile.seek(pos);
-//             buffidx = sizeof(sdbuffer); // Force buffer reload
-//           }
-
-//           for (col = 0; col < w; col++) { // For each pixel...
-//             // Time to read more pixel data?
-//             if (buffidx >= sizeof(sdbuffer)) { // Indeed
-//               bmpFile.read(sdbuffer, sizeof(sdbuffer));
-//               buffidx = 0; // Set index to beginning
-//             }
-
-//             // Convert pixel from BMP to TFT format, push to display
-//             b = sdbuffer[buffidx++];
-//             g = sdbuffer[buffidx++];
-//             r = sdbuffer[buffidx++];
-//             tft.pushColor(tft.color565(r, g, b));
-//           } // end pixel
-//         } // end scanline
-//       } // end goodBmp
-//     }
-//   }
-//   else
-//   {
-//     #ifdef serial_debug
-//       Serial.println("invalid BMP file signature");
-//     #endif
-//   }
-//   bmpFile.close();
-// }
 
 void bmpDraw(char *filename, int x, int y)
 {
@@ -1569,7 +1617,9 @@ void storeOptions_SD()
                      (String)clx + ";" +
                      (String)cty + ";" +
                      (String)slope_x + ";" +
-                     (String)slope_y + ")";
+                     (String)slope_y + ";" +
+                     (String)DEC_backlash + ";" +
+                     (String)RA_backlash + ")";
 
     dataFile.print(options);
     dataFile.close();
@@ -1598,7 +1648,7 @@ void loadOptions_SD()
     {
       String packetIn = optionsBuffer;
       packetIn = packetIn.substring(1, endPac); //tolgo le parentesi
-      String valoriIn[13] = {""};
+      String valoriIn[15] = {""};
 
 #ifdef serial_debug
       Serial.print("packetIn:");
@@ -1606,7 +1656,7 @@ void loadOptions_SD()
 #endif
 
       // for (int i=0; i<sizeof(valoriIn)/sizeof(valoriIn[0])-1; i++)  //genero le sottostringhe
-      for (int i = 0; i < 13; i++) //genero le sottostringhe
+      for (int i = 0; i < 15; i++) //genero le sottostringhe
       {
         int endVal = packetIn.indexOf(";");
         valoriIn[i] = packetIn.substring(0, endVal);
@@ -1635,6 +1685,11 @@ void loadOptions_SD()
       cty = valoriIn[10].toDouble();
       slope_x = valoriIn[11].toDouble();
       slope_y = valoriIn[12].toDouble();
+      DEC_backlash = valoriIn[13].toInt();
+      RA_backlash = valoriIn[14].toInt();
+
+      RA_stepper.setBacklash(RA_backlash);
+      DEC_stepper.setBacklash(DEC_backlash);
 
       analogWrite(TFTBright, TFT_Brightness);
 
@@ -1934,6 +1989,13 @@ double J2000(double yy, double m, double dd, double hh, double mm)
   return d;
 }
 
+double dayno(int dx, int mx, int yx, double fx)
+{
+  dno = (367 * yx) - (int)(7 * (yx + (int)((mx + 9) / 12)) / 4) + (int)(275 * mx / 9) + dx - 730531.5 + fx;
+  dno -= 4975.5;
+  return dno;
+}
+
 double ipart(double xx)
 {
   double sgn;
@@ -1971,12 +2033,6 @@ double FNdegmin(double xx)
   return (a + (e / 100));
 }
 
-double dayno(int dx, int mx, int yx, double fx)
-{
-  dno = (367 * yx) - (int)(7 * (yx + (int)((mx + 9) / 12)) / 4) + (int)(275 * mx / 9) + dx - 730531.5 + fx;
-  dno -= 4975.5;
-  return dno;
-}
 
 double frange(double x)
 {
@@ -2113,6 +2169,69 @@ int calculateBatteryLevel()
   return pmin;
 }
 
+void considerMotorSweep()
+{
+  if (IS_RA_sweep)
+  {
+    if (!RA_stepper.motionComplete())
+    {
+      setmStepsMode("D", MICROSteps);
+      RA_stepper.setSpeedInStepsPerSecond(10000);
+      RA_stepper.setAccelerationInStepsPerSecondPerSecond(10000);
+
+      RA_stepper.processMovement(true);
+    }
+    else if (RA_sweep)
+    {
+      if (RA_sweep_dir)
+      {
+        RA_stepper.setTargetPositionInSteps(RA_stepper.getCurrentPositionInSteps() - RA_backlash);
+        delay(200);
+      }
+      else
+      {
+        RA_stepper.setTargetPositionInSteps(RA_stepper.getCurrentPositionInSteps() + RA_backlash);
+        delay(200);
+      }
+      RA_sweep_dir = !RA_sweep_dir;
+    }
+    else
+    {
+      IS_RA_sweep = false;
+    }
+  }
+
+  if (IS_DEC_sweep)
+  {
+    if (!DEC_stepper.motionComplete())
+    {
+      setmStepsMode("D", MICROSteps);
+      DEC_stepper.setSpeedInStepsPerSecond(10000);
+      DEC_stepper.setAccelerationInStepsPerSecondPerSecond(10000);
+
+      DEC_stepper.processMovement(true);
+    }
+    else if (DEC_sweep)
+    {
+      if (DEC_sweep_dir)
+      {
+        DEC_stepper.setTargetPositionInSteps(DEC_stepper.getCurrentPositionInSteps() - DEC_backlash);
+        delay(200);
+      }
+      else
+      {
+        DEC_stepper.setTargetPositionInSteps(DEC_stepper.getCurrentPositionInSteps() + DEC_backlash);
+        delay(200);
+      }
+      DEC_sweep_dir = !DEC_sweep_dir;
+    }
+    else
+    {
+      IS_DEC_sweep = false;
+    }
+  }
+}
+
 void deb_print(char *str)
 {
 #ifdef serial_debug
@@ -2159,6 +2278,18 @@ void deb_println(String str)
 #endif
 }
 void deb_println(double str)
+{
+#ifdef serial_debug
+  Serial.println(str);
+#endif
+}
+void deb_println(long str)
+{
+#ifdef serial_debug
+  Serial.println(str);
+#endif
+}
+void deb_println(unsigned long str)
 {
 #ifdef serial_debug
   Serial.println(str);

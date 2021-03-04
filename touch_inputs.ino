@@ -28,7 +28,7 @@
 //    * CURRENT_SCREEN==5  - drawCoordinatesScreen() Only have "back" button
 //    * CURRENT_SCREEN==6  - drawLoadScreen() Captures input on Load screen (all of them: Messier && Treasurres)
 //    * CURRENT_SCREEN==7  -                - not used
-//    * CURRENT_SCREEN==8  -                - not used
+//    * CURRENT_SCREEN==8  -  drawMountCalScreen
 //    * CURRENT_SCREEN==9  -                - not used
 //    * CURRENT_SCREEN==10  - drawSTATScreen()
 //    * CURRENT_SCREEN==11  -               - not used
@@ -359,11 +359,6 @@ void considerTouchInput(int lx, int ly)
         tft.fillRect2(40, 405, 240, 70, btn_l_border);
         last_button = 1;
       }
-
-
-       
-
-
     }
     else if (CURRENT_SCREEN == 6)
     { // captures touches on drawLoadScreen() .. the one that loads objects from DB
@@ -377,7 +372,7 @@ void considerTouchInput(int lx, int ly)
         // BTN next> pressed  TREAS_PAGER
         if (LOAD_SELECTOR == 1)
         {
-          if (MESS_PAGER < MESS_PAGES-1)
+          if (MESS_PAGER < MESS_PAGES - 1)
           {
             MESS_PAGER += 1;
           }
@@ -389,7 +384,7 @@ void considerTouchInput(int lx, int ly)
         }
         else if (LOAD_SELECTOR == 2)
         {
-          if (TREAS_PAGER < TREAS_PAGES-1)
+          if (TREAS_PAGER < TREAS_PAGES - 1)
           {
             TREAS_PAGER += 1;
           }
@@ -401,7 +396,7 @@ void considerTouchInput(int lx, int ly)
         }
         else if (LOAD_SELECTOR == 4)
         {
-          if (CUSTOM_PAGER < CUSTOM_PAGES-1)
+          if (CUSTOM_PAGER < CUSTOM_PAGES - 1)
           {
             CUSTOM_PAGER += 1;
           }
@@ -423,7 +418,7 @@ void considerTouchInput(int lx, int ly)
           }
           else
           {
-            MESS_PAGER = MESS_PAGES-1;
+            MESS_PAGER = MESS_PAGES - 1;
           }
           drawLoadObjects();
         }
@@ -435,7 +430,7 @@ void considerTouchInput(int lx, int ly)
           }
           else
           {
-            TREAS_PAGER = TREAS_PAGES-1;
+            TREAS_PAGER = TREAS_PAGES - 1;
           }
           drawLoadObjects();
         }
@@ -447,7 +442,7 @@ void considerTouchInput(int lx, int ly)
           }
           else
           {
-            CUSTOM_PAGER = CUSTOM_PAGES-1;
+            CUSTOM_PAGER = CUSTOM_PAGES - 1;
           }
           drawLoadObjects();
         }
@@ -772,7 +767,8 @@ void considerTouchInput(int lx, int ly)
       {
         // Screen REDUCE Brightness   "Triangle"
         // TFT_Brightness = 190 +((lx - 5)*0.25);
-        TFT_Brightness = 125 + ((lx - 5) * 0.5);
+        // TFT_Brightness = 125 + ((lx - 5) * 0.5);
+        TFT_Brightness = 8 + ((lx - 5) * 0.95);
         analogWrite(TFTBright, TFT_Brightness);
         updateTriangleBrightness_opt();
 
@@ -856,14 +852,9 @@ void considerTouchInput(int lx, int ly)
       {
         // ON Stepper Motors
         IS_STEPPERS_ON = true;
-        // digitalWrite(POWER_DRV8825, HIGH == !reverse_logic);
         digitalWrite(DEC_ENABLE, LOW); // enable stepper driver
         digitalWrite(RA_ENABLE, LOW);  // enable stepper driver
 
-#ifdef serial_debug
-        Serial.print("Stepper was turned: ");
-        Serial.println(HIGH * !reverse_logic);
-#endif
         Stepper_State = "ON";
         updateStepper_opt();
       }
@@ -871,35 +862,30 @@ void considerTouchInput(int lx, int ly)
       {
         // OFF Stepper Motors
         IS_STEPPERS_ON = false;
-        // digitalWrite(POWER_DRV8825, LOW == !reverse_logic);
         digitalWrite(DEC_ENABLE, HIGH); // disable stepper driver
         digitalWrite(RA_ENABLE, HIGH);  // disable stepper driver
 
-#ifdef serial_debug
-        Serial.print("Stepper was turned: ");
-        Serial.println(LOW * !reverse_logic);
-#endif
         Stepper_State = "OFF";
         updateStepper_opt();
       }
 
       //Touched GPS configuration
-      if (lx > 230 && lx < 320 && ly > 300 && ly < 400)
+      if (lx > 220 && lx < 320 && ly > 300 && ly < 350)
       {
-        DrawButton(230, 300, 80, 100, "", btn_l_border, 0, btn_l_text, 2);
-        tft.setCursor(252, 320);
-        tft.print("Set");
-        tft.setCursor(252, 340);
+        DrawButton(220, 300, 100, 50, "Time", btn_l_border, 0, btn_l_text, 2);
+        // tft.setCursor(252, 320);
+        // tft.print("Set");
+        // tft.setCursor(252, 340);
 
 #ifdef no_gps
-        tft.print("Clock");
+        // tft.print("Clock");
 #else
         tft.print("GPS");
         tft.setCursor(242, 360);
         tft.print("Clock");
 #endif
 
-        storeOptions_SD();
+        //storeOptions_SD();
 
 #ifdef no_gps
         drawClockScreen();
@@ -909,21 +895,162 @@ void considerTouchInput(int lx, int ly)
       }
 
       //Touched TFT Calibration
-      if (lx > 230 && lx < 320 && ly > 410 && ly < 480)
+      if (lx > 220 && lx < 320 && ly > 365 && ly < 415)
       {
-        DrawButton(230, 410, 80, 70, "", btn_l_border, 0, btn_l_text, 2);
+        DrawButton(220, 365, 100, 50, "Time", btn_l_border, 0, btn_l_text, 2);
 
-        tft.setCursor(252, 430);
-        tft.print("TFT");
-        tft.setCursor(252, 450);
-        tft.print("Cal");
+        // tft.setCursor(252, 430);
+        // tft.print("TFT");
+        // tft.setCursor(252, 450);
+        // tft.print("Cal");
 
-        CURRENT_SCREEN = 14;
         drawTFTCalibrationScreen();
 
         CURRENT_SCREEN = 7;
         drawOptionsScreen();
       }
+
+      //Touched Mount Calibration
+      if (lx > 220 && lx < 320 && ly > 430 && ly < 480)
+      {
+        DrawButton(220, 430, 100, 50, "Mount", btn_l_border, 0, btn_l_text, 2);
+
+        // tft.setCursor(252, 430);
+        // tft.print("TFT");
+        // tft.setCursor(252, 450);
+        // tft.print("Cal");
+
+        drawMountCalScreen();
+      }
+    }
+    else if (CURRENT_SCREEN == 8) // captures touches on drawMountCalScreen()
+    {
+      if (lx > 210 && lx < 320 && ly > 10 && ly < 60)
+      {
+        // BTN <Back pressed
+        storeOptions_SD();
+        drawMainScreen();
+      }
+
+      if (lx > 10 && lx < 50 && ly > 120 && ly < 185)
+      {
+        // RA backlash --
+        if (RA_backlash >= 10)
+        {
+          RA_backlash -= 10;
+        }
+        else
+        {
+          RA_backlash = 0;
+        }
+        update_RA_backlash();
+      }
+      if (lx > 60 && lx < 100 && ly > 120 && ly < 185)
+      {
+        // RA backlash -
+        if (RA_backlash >= 1)
+        {
+          RA_backlash -= 1;
+        }
+        update_RA_backlash();
+      }
+
+      if (lx > 220 && lx < 260 && ly > 120 && ly < 185)
+      {
+        // RA backlash +
+        RA_backlash += 1;
+        update_RA_backlash();
+      }
+      if (lx > 270 && lx < 310 && ly > 120 && ly < 185)
+      {
+        // RA backlash ++
+        RA_backlash += 10;
+        update_RA_backlash();
+      }
+
+      if (lx > 10 && lx < 50 && ly > 300 && ly < 365)
+      {
+        // RA backlash --
+        if (DEC_backlash >= 10)
+        {
+          DEC_backlash -= 10;
+        }
+        else
+        {
+          DEC_backlash = 0;
+        }
+        update_DEC_backlash();
+      }
+      if (lx > 60 && lx < 100 && ly > 300 && ly < 365)
+      {
+        // RA backlash -
+        if (DEC_backlash >= 1)
+        {
+          DEC_backlash -= 1;
+        }
+        update_DEC_backlash();
+      }
+
+      if (lx > 220 && lx < 260 && ly > 300 && ly < 365)
+      {
+        // RA backlash +
+        DEC_backlash += 1;
+        update_DEC_backlash();
+      }
+      if (lx > 270 && lx < 310 && ly > 300 && ly < 365)
+      {
+        // RA backlash +
+        DEC_backlash += 10;
+        update_DEC_backlash();
+      }
+
+      if (lx > 10 && lx < 310 && ly > 195 && ly < 260)
+      {
+        // Sweep RA motor
+        if (!RA_sweep)
+        {
+          RA_sweep = true;
+          IS_RA_sweep = true;
+          setmStepsMode("R", MICROSteps);
+          RA_stepper.setSpeedInStepsPerSecond(10000);
+          RA_stepper.setAccelerationInStepsPerSecondPerSecond(10000);
+          RA_saveCurrentPositionInSteps = RA_stepper.getCurrentPositionInSteps();
+          RA_sweep_dir = true;
+          RA_stepper.setTargetPositionInSteps(RA_saveCurrentPositionInSteps + RA_backlash);
+        }
+        else
+        {
+          RA_sweep = false;
+          RA_stepper.setTargetPositionInSteps(RA_saveCurrentPositionInSteps);
+        }
+
+        update_RA_sweep();
+      }
+
+      if (lx > 10 && lx < 310 && ly > 390 && ly < 455)
+      {
+        // Sweep DEC motor
+        if (!DEC_sweep)
+        {
+          DEC_sweep = true;
+          IS_DEC_sweep = true;
+          setmStepsMode("D", MICROSteps);
+          DEC_stepper.setSpeedInStepsPerSecond(10000);
+          DEC_stepper.setAccelerationInStepsPerSecondPerSecond(10000);
+          DEC_saveCurrentPositionInSteps = DEC_stepper.getCurrentPositionInSteps();
+          DEC_sweep_dir = true;
+          DEC_stepper.setTargetPositionInSteps(DEC_saveCurrentPositionInSteps + DEC_backlash);
+        }
+        else
+        {
+          DEC_sweep = false;
+          DEC_stepper.setTargetPositionInSteps(DEC_saveCurrentPositionInSteps);
+        }
+
+        update_DEC_sweep();
+      }
+
+
     }
     else if (CURRENT_SCREEN == 10) // captures touches on drawSTATScreen()
     {
@@ -1410,6 +1537,7 @@ void considerTouchInput(int lx, int ly)
         Slew_timer = millis();
         Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
         OBJECT_DETAILS = "The north and south celestial poles are the two imaginary points in the sky where the Earth's axis of rotation, intersects the celestial sphere";
+        deb_println("Homing started..");
       }
       if ((last_button == 5) || (last_button == 11))
       {
@@ -1432,6 +1560,7 @@ void considerTouchInput(int lx, int ly)
           IS_TRACKING = true;
           DrawButton(220, 325, 100, 70, "TRACK", btn_d_border, btn_l_border, btn_l_text, 2);
           setmStepsMode("R", MICROSteps);
+          RA_stepper.setDirectionBacklash(1);
           if (Tracking_type == 1)
           { // 1: Sidereal, 2: Solar, 0: Lunar;
             Timer3.start(Clock_Sidereal);
@@ -1545,11 +1674,16 @@ void considerTouchInput(int lx, int ly)
       {
         last_button = 0;
         // set microsteps to home position
-        RA_microSteps = RA_90; //  --> point to North Sudereal Pole = -180 deg (-12h)
-        DEC_microSteps = 0;    //  --> Point to North Sudereal Pole = 90 deg
+        // RA_microSteps = RA_90; //  --> point to North Sudereal Pole = -180 deg (-12h)
+        // DEC_microSteps = 0;    //  --> Point to North Sudereal Pole = 90 deg
+
+        RA_stepper.setCurrentPositionInSteps(RA_90);
+        RA_stepper.setTargetPositionInSteps(RA_90);
+        DEC_stepper.setCurrentPositionInSteps(0);
+        DEC_stepper.setTargetPositionInSteps(0);
+
         considerTimeUpdates(); // Update coordinates on the screen
         DrawButton(40, 405, 240, 70, "SET HOME POSITION", 0, btn_l_border, btn_l_text, 2);
-        
       }
     }
   }

@@ -146,8 +146,8 @@ void considerBTCommands() {
     HAMm = HAMin;
     HA_deci = (HAHh + (HAMm / 60)) * 15; // In degrees - decimal
 
-    delta_a_RA = (double(RA_microSteps) - double(HA_deci * HA_H_CONST)) / double(HA_H_CONST);
-    delta_a_DEC = (double(DEC_microSteps) - double(SLEW_DEC_microsteps)) / double(DEC_D_CONST);
+    delta_a_RA = (double(RA_stepper.getCurrentPositionInSteps()) - double(HA_deci * HA_H_CONST)) / double(HA_H_CONST);
+    delta_a_DEC = (double(DEC_stepper.getCurrentPositionInSteps()) - double(SLEW_DEC_microsteps)) / double(DEC_D_CONST);
 
     Serial3.print("Coordinates  matched #");
     BT_COMMAND_STR = "";
@@ -374,9 +374,9 @@ void considerBTCommands() {
     Serial3.println(" hours");
     Serial3.println("\r\nCURRENT TELESCOPE POSITION COUNTER:");
     Serial3.print("RA_microSteps: ");
-    Serial3.println(RA_microSteps);
+    Serial3.println(RA_stepper.getCurrentPositionInSteps());
     Serial3.print("DEC_microSteps: ");
-    Serial3.println(DEC_microSteps);
+    Serial3.println(DEC_stepper.getCurrentPositionInSteps());
     Serial3.print("delta_a_RA: ");
     Serial3.println(delta_a_RA);
     Serial3.print("delta_a_DEC: ");
