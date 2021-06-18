@@ -23,7 +23,7 @@
 //
 //
 
-/*    
+/*     Based on https://github.com/giacu92/rDUINOScope/tree/v2.3.1-ILI9488/_2.3.1_Boiana_EQ_Giacomo
  *     Major differences from main release:
  *     
  *     -  Uses ILI9488 480x320 px display in SPI, instead of HX8352B 400x240 px display, so bigger screen and less pin used.
