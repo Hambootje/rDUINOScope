@@ -95,10 +95,10 @@ void drawClockScreen()
   tft.fillScreen2(BLACK);
   tft.fillRect2(0, 0, 400, 50, title_bg);
   tft.drawLine(0, 52, 400, 52, title_bg); // yellow line
-  tft.setCursor(27, 13);
+  tft.setCursor(20, 13);
   tft.setTextColor(title_texts);
   tft.setTextSize(4);
-  tft.print("Date & Time");
+  tft.print("Time");
   tft.setTextSize(3);
   tft.setTextColor(l_text);
   tft.setCursor(70, 80);
@@ -107,6 +107,8 @@ void drawClockScreen()
   tft.setCursor(110, 115);
   tft.print(rtc.getTimeStr(FORMAT_SHORT));
   //  tft.print(returnTime());
+
+  DrawButton(210, 5, 100, 40, "<back", btn_d_border, btn_l_border, btn_l_text, 3);
 
   // Draw keypad....
   tft.setTextColor(btn_l_text);
@@ -147,6 +149,13 @@ void drawClockScreen()
 void drawSelectAlignment()
 {
   CURRENT_SCREEN = 3;
+
+  Start_date = String(rtc.getDateStr()).substring(0, 2) + " " + rtc.getMonthStr(FORMAT_SHORT) + " " + String(rtc.getDateStr()).substring(6);
+  old_d = rtc.getDateStr(FORMAT_LONG, FORMAT_LITTLEENDIAN, '/');
+  START_TIME = rtc.getTimeStr(FORMAT_SHORT);
+  _Stemp = dht.readTemperature();
+  _Shumid = dht.readHumidity();
+
   tft.fillScreen2(BLACK);
   tft.fillRect2(0, 0, 400, 50, title_bg); // yellow Rectangle  Was (1, 1, 239, 35, title_bg);
   tft.drawLine(0, 52, 400, 52, title_bg); // yellow line
@@ -189,7 +198,6 @@ void drawMountCalScreen()
   DrawButton(220, 120, 40, 65, " + ", btn_d_border, btn_l_border, btn_l_text, 2);
   DrawButton(270, 120, 40, 65, " ++ ", btn_d_border, btn_l_border, btn_l_text, 2);
 
-
   tft.setCursor(10, 280);
   tft.setTextColor(l_text); // black
   tft.setTextSize(3);
@@ -200,12 +208,10 @@ void drawMountCalScreen()
   DrawButton(220, 315, 40, 65, " + ", btn_d_border, btn_l_border, btn_l_text, 2);
   DrawButton(270, 315, 40, 65, " ++ ", btn_d_border, btn_l_border, btn_l_text, 2);
 
-
   update_RA_backlash();
   update_DEC_backlash();
   update_RA_sweep();
   update_DEC_sweep();
-
 }
 
 void drawMainScreen()
@@ -728,7 +734,7 @@ void drawOptionsScreen()
   tft.fillScreen2(BLACK);
   tft.fillRect2(0, 0, 400, 50, title_bg); // yellow Rectangle  Was (1, 1, 239, 35, title_bg);
   tft.drawLine(0, 52, 400, 52, title_bg); // yellow line
-  tft.setCursor(5, 13);
+  tft.setCursor(20, 13);
   tft.setTextColor(title_texts);
   tft.setTextSize(4);
   tft.print("Options");
@@ -1151,7 +1157,6 @@ void OnScreenMsg(int Msg)
     tft.print(m3);
   }
 }
-
 
 void considerDayNightMode()
 {
@@ -1841,6 +1846,7 @@ void drawAlignObjects_ali()
         kk += 1;
       }
     }
+    DrawButton(130, 430, 60, 40, String(STARS_PAGER + 1, DEC) + "/" + String(STARS_PAGES), btn_d_border, btn_l_border, btn_l_text, 2);
   }
   else
   {
@@ -1868,6 +1874,7 @@ void drawAlignObjects_ali()
         kk += 1;
       }
     }
+    DrawButton(130, 430, 60, 40, String(STARS_PAGER + 1, DEC) + "/" + String(STARS_PAGES), btn_d_border, btn_l_border, btn_l_text, 2);
   }
 }
 

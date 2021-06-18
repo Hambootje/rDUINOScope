@@ -27,11 +27,11 @@
 //    * CURRENT_SCREEN==4  - drawMainScreen() Captures all clicks on the MAIN Screen of the application
 //    * CURRENT_SCREEN==5  - drawCoordinatesScreen() Only have "back" button
 //    * CURRENT_SCREEN==6  - drawLoadScreen() Captures input on Load screen (all of them: Messier && Treasurres)
-//    * CURRENT_SCREEN==7  -                - not used
-//    * CURRENT_SCREEN==8  -  drawMountCalScreen
+//    * CURRENT_SCREEN==7  - drawOptionsScreen()
+//    * CURRENT_SCREEN==8  -  drawMountCalScreen()
 //    * CURRENT_SCREEN==9  -                - not used
 //    * CURRENT_SCREEN==10  - drawSTATScreen()
-//    * CURRENT_SCREEN==11  -               - not used
+//    * CURRENT_SCREEN==11  - drawStarMap()
 //    * CURRENT_SCREEN==12  - drawStarSyncScreen() - To Select Alignment Star;
 //    * CURRENT_SCREEN==13  - drawConstelationScreen(int indx) - to actually align on Star. Called few times per alignment procedure.
 //    * CURRENT_SCREEN==15  - confirm_sun_track()
@@ -70,6 +70,12 @@ void considerTouchInput(int lx, int ly)
     }
     else if (CURRENT_SCREEN == 1)
     { // captures touches on drawClockScreen()
+      if (lx > 210 && lx < 320 && ly > 10 && ly < 60)
+      {
+        // BTN <Back pressed
+        drawOptionsScreen();
+      }
+
       if (lx > 220 && lx < 320 && ly > 405 && ly < 480)
       {
         // BTN OK pressed
@@ -93,14 +99,9 @@ void considerTouchInput(int lx, int ly)
           rtc.setTime(hh, mm, 00);
           rtc.setDate(dd, mo, yy);
         }
-        Start_date = String(rtc.getDateStr()).substring(0, 2) + " " + rtc.getMonthStr(FORMAT_SHORT) + " " + String(rtc.getDateStr()).substring(6);
-        old_d = rtc.getDateStr(FORMAT_LONG, FORMAT_LITTLEENDIAN, '/');
-        START_TIME = rtc.getTimeStr(FORMAT_SHORT);
-        _Stemp = dht.readTemperature();
-        ;
-        _Shumid = dht.readHumidity();
 
-        drawSelectAlignment();
+        // drawSelectAlignment();
+        drawOptionsScreen();
         //drawStarSyncScreen();
         //drawMainScreen();
       }
@@ -187,6 +188,8 @@ void considerTouchInput(int lx, int ly)
         // BTN "1 Star Alignment" pressed
         DrawButton(30, 150, 250, 65, "1 Star Alignment", btn_l_border, 0, btn_l_text, 2);
         ALLIGN_TYPE = 1;
+        STARS_PAGER = 0;
+        STARS_PAGES = int(nr_Stars / 24) + 1;
         drawStarSyncScreen();
       }
       else if (lx > 30 && lx < 250 && ly > 250 && ly < 315)
@@ -198,7 +201,7 @@ void considerTouchInput(int lx, int ly)
         // I'll take some time to Initialize the Sub ARRAY with suitable stars (only for Northern Hemi)
         tft.setCursor(0, 5);
         int cc = 0;
-        for (int t = 0; t < 203; t++)
+        for (int t = 0; t < nr_Stars; t++)
         {
           int i1 = Stars[t].indexOf(';');
           int i2 = Stars[t].indexOf(';', i1 + 1);
@@ -230,6 +233,8 @@ void considerTouchInput(int lx, int ly)
             }
           }
           int_star_count = floor(cc / 15) + 1;
+          STARS_PAGER = 0;
+          STARS_PAGES = int(cc / 24) + 1;
         }
         delay(500);
         drawStarSyncScreen();
@@ -255,7 +260,8 @@ void considerTouchInput(int lx, int ly)
         ALLIGN_STEP = 0;
         ALLIGN_TYPE = 0;
 #ifdef no_gps
-        drawClockScreen();
+        // drawClockScreen();
+        drawSelectAlignment();
 #else
         drawGPSScreen();
 #endif;
@@ -528,8 +534,8 @@ void considerTouchInput(int lx, int ly)
                   IS_OBJ_FOUND = false;
                   IS_OBJECT_RA_FOUND = false;
                   IS_OBJECT_DEC_FOUND = false;
-                  Slew_timer = millis();
-                  Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
+                  // Slew_timer = millis();
+                  // Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
                 }
                 else
                 {
@@ -582,8 +588,8 @@ void considerTouchInput(int lx, int ly)
                   IS_OBJ_FOUND = false;
                   IS_OBJECT_RA_FOUND = false;
                   IS_OBJECT_DEC_FOUND = false;
-                  Slew_timer = millis();
-                  Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
+                  // Slew_timer = millis();
+                  // Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
                 }
                 else
                 {
@@ -652,8 +658,8 @@ void considerTouchInput(int lx, int ly)
                     IS_OBJ_FOUND = false;
                     IS_OBJECT_RA_FOUND = false;
                     IS_OBJECT_DEC_FOUND = false;
-                    Slew_timer = millis();
-                    Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
+                    // Slew_timer = millis();
+                    // Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
                   }
                   else
                   {
@@ -706,8 +712,8 @@ void considerTouchInput(int lx, int ly)
                   IS_OBJ_FOUND = false;
                   IS_OBJECT_RA_FOUND = false;
                   IS_OBJECT_DEC_FOUND = false;
-                  Slew_timer = millis();
-                  Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
+                  // Slew_timer = millis();
+                  // Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
                 }
                 else
                 {
@@ -929,7 +935,7 @@ void considerTouchInput(int lx, int ly)
       {
         // BTN <Back pressed
         storeOptions_SD();
-        drawMainScreen();
+        drawOptionsScreen();
       }
 
       if (lx > 10 && lx < 50 && ly > 120 && ly < 185)
@@ -1049,8 +1055,6 @@ void considerTouchInput(int lx, int ly)
 
         update_DEC_sweep();
       }
-
-
     }
     else if (CURRENT_SCREEN == 10) // captures touches on drawSTATScreen()
     {
@@ -1120,44 +1124,44 @@ void considerTouchInput(int lx, int ly)
         IS_IN_OPERATION = true;
         drawMainScreen();
       }
-      int do_kolko = 0;
-      if (ALLIGN_TYPE == 3)
-      {
-        // Chage the 4 to represent the real count of screens.
-        // They need to be dynamically calculated... not fixed
-        do_kolko = int_star_count;
-      }
-      else
-      {
-        do_kolko = 14;
-      }
+      // int do_kolko = 0;
+      // if (ALLIGN_TYPE == 3)
+      // {
+      //   // Chage the 4 to represent the real count of screens.
+      //   // They need to be dynamically calculated... not fixed
+      //   do_kolko = int_star_count;
+      // }
+      // else
+      // {
+      //   do_kolko = 14;
+      // }
+
       if (lx > 220 && lx < 320 && ly > 420 && ly < 480)
       {
         // BTN next> pressed
-        STARS_PAGER += 1;
-        if (STARS_PAGER < do_kolko)
+        if (STARS_PAGER < STARS_PAGES - 1)
         {
-          //drawStarSyncScreen();
-          drawAlignObjects_ali();
-        }
-        else
-        {
-          STARS_PAGER = do_kolko - 1;
-        }
-      }
-      if (lx > 0 && lx < 100 && ly > 420 && ly < 480)
-      {
-        // BTN <prev pressed
-        STARS_PAGER -= 1;
-        if (STARS_PAGER >= 0)
-        {
-          //drawStarSyncScreen();
-          drawAlignObjects_ali();
+          STARS_PAGER += 1;
         }
         else
         {
           STARS_PAGER = 0;
         }
+
+        drawAlignObjects_ali();
+      }
+      if (lx > 0 && lx < 100 && ly > 420 && ly < 480)
+      {
+        // BTN <prev pressed
+        if (STARS_PAGER > 0)
+        {
+          STARS_PAGER -= 1;
+        }
+        else
+        {
+          STARS_PAGER = STARS_PAGES - 1;
+        }
+        drawAlignObjects_ali();
       }
 
       if (ALLIGN_TYPE < 3)
@@ -1204,8 +1208,8 @@ void considerTouchInput(int lx, int ly)
                   IS_OBJ_FOUND = false;
                   IS_OBJECT_RA_FOUND = false;
                   IS_OBJECT_DEC_FOUND = false;
-                  Slew_timer = millis();
-                  Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
+                  // Slew_timer = millis();
+                  // Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
                   STARS_PAGER == 0;
                   SELECTED_STAR = zz;
                   ALLIGN_STEP += 1;
@@ -1254,8 +1258,8 @@ void considerTouchInput(int lx, int ly)
                 IS_OBJ_FOUND = false;
                 IS_OBJECT_RA_FOUND = false;
                 IS_OBJECT_DEC_FOUND = false;
-                Slew_timer = millis();
-                Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
+                // Slew_timer = millis();
+                // Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
                 STARS_PAGER == 0;
                 SELECTED_STAR = zz;
                 ALLIGN_STEP += 1;
@@ -1331,8 +1335,8 @@ void considerTouchInput(int lx, int ly)
             IS_OBJ_FOUND = false;
             IS_OBJECT_RA_FOUND = false;
             IS_OBJECT_DEC_FOUND = false;
-            Slew_timer = millis();
-            Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
+            // Slew_timer = millis();
+            // Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
             //drawConstelationScreen(0);
             ALLIGN_STEP = 2;
           }
@@ -1362,8 +1366,8 @@ void considerTouchInput(int lx, int ly)
             IS_OBJ_FOUND = false;
             IS_OBJECT_RA_FOUND = false;
             IS_OBJECT_DEC_FOUND = false;
-            Slew_timer = millis();
-            Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
+            // Slew_timer = millis();
+            // Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
             //drawConstelationScreen(0);
             ALLIGN_STEP = 1;
           }
@@ -1534,8 +1538,8 @@ void considerTouchInput(int lx, int ly)
         IS_OBJ_FOUND = false;
         IS_OBJECT_RA_FOUND = false;
         IS_OBJECT_DEC_FOUND = false;
-        Slew_timer = millis();
-        Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
+        // Slew_timer = millis();
+        // Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
         OBJECT_DETAILS = "The north and south celestial poles are the two imaginary points in the sky where the Earth's axis of rotation, intersects the celestial sphere";
         deb_println("Homing started..");
       }

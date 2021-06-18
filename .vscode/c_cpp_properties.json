@@ -19,7 +19,9 @@
                 "C:\\Users\\nxp34207\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\sam\\1.6.12\\**",
                 "C:\\Program Files (x86)\\Arduino\\libraries\\**",
                 "\\freenas.fritz.box\\Data\\Electronics\\Telescoop\\rDUINOScope\\rDUINOScope-2.3.1-vscode\\rDUINOScope\\libraries\\**",
-                "C:\\Users\\nxp34207\\AppData\\Local\\Arduino15\\packages\\arduino\\tools\\**" 
+                "C:\\Users\\nxp34207\\AppData\\Local\\Arduino15\\packages\\arduino\\tools\\**",
+                "\\freenas.fritz.box\\Data\\Electronics\\Telescoop\\rDUINOScope\\rDUINOScope-2.3.1-vscode\\rDUINOScope\\libraries\\**",
+                "\\freenas.fritz.box\\Data\\Electronics\\Telescoop\\rDUINOScope\\rDUINOScope-2.3.1-vscode\\rDUINOScope\\libraries\\**"
             ],
             "defines": [
                 "_DEBUG",

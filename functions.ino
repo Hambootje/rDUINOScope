@@ -99,13 +99,13 @@ void calculateLST_HA()
     if ((IS_BT_MODE_ON == true) && (IS_OBJ_FOUND == false))
     {
       Serial3.println("Object is out of sight! Telescope not moved.");
+      deb_println("Object is out of sight! Telescope not moved.");
     }
     IS_OBJ_FOUND = true;
     IS_OBJECT_RA_FOUND = true;
     IS_OBJECT_DEC_FOUND = true;
-    Slew_RA_timer = 0;
+    // Slew_RA_timer = 0;
     RA_finish_last = 0;
-    deb_print("Object is out of sight! Telescope not moved.");
   }
   else
   {
@@ -117,6 +117,12 @@ void calculateLST_HA()
   if (IS_MERIDIAN_FLIP_AUTOMATIC)
   {
     mer_flp = HAHour + ((HAMin + MIN_TO_MERIDIAN_FLIP) / 60);
+    
+    if (debug==9) {
+        deb_print("mer_flp: ");
+        deb_println(mer_flp);
+    }
+    
     float old_HAMin = HAMin;
     float old_HAHour = HAHour;
     if (IS_POSIBLE_MERIDIAN_FLIP == true)
@@ -142,8 +148,8 @@ void calculateLST_HA()
           IS_OBJ_FOUND = false;
           IS_OBJECT_RA_FOUND = false;
           IS_OBJECT_DEC_FOUND = false;
-          Slew_timer = millis();
-          Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
+          // Slew_timer = millis();
+          // Slew_RA_timer = Slew_timer + 20000; // Give 20 sec. advance to the DEC. We will revise later.
           MERIDIAN_FLIP_DO = true;
           drawMainScreen();
         }

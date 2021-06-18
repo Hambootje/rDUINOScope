@@ -29,30 +29,30 @@ void planet_pos(int pno)
 
   OBJECT_NAME = ss_planet_names[pno];
 
-  #ifdef serial_debug
-    Serial.print("pno = ");
-    Serial.println(pno);
-    Serial.print(hour());
-    Serial.print(":");
-    Serial.println(minute());
-    Serial.print("year: ");
-    Serial.println(yy);
-    Serial.print("month: ");
-    Serial.println(mm);
-    Serial.print("day: ");
-    Serial.println(dd);
-    Serial.print("hour: ");
-    Serial.println(hh);
-    Serial.print("minute: ");
-    Serial.println(mm);
-    Serial.println("----------------- ");
+  // #ifdef serial_debug
+  //   Serial.print("pno = ");
+  //   Serial.println(pno);
+  //   Serial.print(hour());
+  //   Serial.print(":");
+  //   Serial.println(minute());
+  //   Serial.print("year: ");
+  //   Serial.println(yy);
+  //   Serial.print("month: ");
+  //   Serial.println(mm);
+  //   Serial.print("day: ");
+  //   Serial.println(dd);
+  //   Serial.print("hour: ");
+  //   Serial.println(hh);
+  //   Serial.print("minute: ");
+  //   Serial.println(mm);
+  //   Serial.println("----------------- ");
 
-    Serial.print("Date: ");
-    Serial.println(Date_q);
-    Serial.print("Time: ");
-    Serial.println(Time_q);
+  //   Serial.print("Date: ");
+  //   Serial.println(Date_q);
+  //   Serial.print("Time: ");
+  //   Serial.println(Time_q);
 
-  #endif
+  // #endif
 
   double OBJ_RA = 0;
   double OBJ_DEC = 0;
@@ -60,10 +60,10 @@ void planet_pos(int pno)
   dfrac = (hh+(mm/60))/24;
   d = dayno(dd,mu,yy,dfrac);
 
-  #ifdef serial_debug
-    Serial.print("dayno : ");
-    Serial.println(d);
-  #endif
+  // #ifdef serial_debug
+  //   Serial.print("dayno : ");
+  //   Serial.println(d);
+  // #endif
 
   earth();  //Calculates the position of the Earth in the coordinate system used
 
@@ -168,22 +168,22 @@ void planet_pos(int pno)
     while(F > 360) F -= 360;
     while(F < 0) F += 360;
 
-    #ifdef serial_debug
-      Serial.print("jd = ");
-      Serial.println(jd);
-      Serial.print("T = ");
-      Serial.println(T);
-      Serial.print("Lm = ");
-      Serial.println(Lm);
-      Serial.print("D = ");
-      Serial.println(D);
-      Serial.print("Ms = ");
-      Serial.println(Ms);
-      Serial.print("Mm = ");
-      Serial.println(Mm);
-      Serial.print("F = ");
-      Serial.println(F);
-    #endif
+    // #ifdef serial_debug
+    //   Serial.print("jd = ");
+    //   Serial.println(jd);
+    //   Serial.print("T = ");
+    //   Serial.println(T);
+    //   Serial.print("Lm = ");
+    //   Serial.println(Lm);
+    //   Serial.print("D = ");
+    //   Serial.println(D);
+    //   Serial.print("Ms = ");
+    //   Serial.println(Ms);
+    //   Serial.print("Mm = ");
+    //   Serial.println(Mm);
+    //   Serial.print("F = ");
+    //   Serial.println(F);
+    // #endif
     
     double A1 = 119.75 + 131.849*T;
     double A2 = 53.09 + 479264.290*T;

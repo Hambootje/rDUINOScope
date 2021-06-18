@@ -94,8 +94,8 @@ void considerBTCommands() {
     IS_OBJ_FOUND = false;
     IS_OBJECT_RA_FOUND = false;
     IS_OBJECT_DEC_FOUND = false;
-    Slew_timer = millis();
-    Slew_RA_timer = Slew_timer + 20000;   // Give 20 sec. advance to the DEC. We will revise later.
+    // Slew_timer = millis();
+    // Slew_RA_timer = Slew_timer + 20000;   // Give 20 sec. advance to the DEC. We will revise later.
     OBJECT_DETAILS = "The north and south celestial poles are the two imaginary points in the sky where the Earth's axis of rotation, intersects the celestial sphere";
   }
   if (BT_COMMAND_STR == "RD_priv") {
@@ -326,8 +326,8 @@ void considerBTCommands() {
       IS_OBJ_FOUND = false;
       IS_OBJECT_RA_FOUND = false;
       IS_OBJECT_DEC_FOUND = false;
-      Slew_timer = millis();
-      Slew_RA_timer = Slew_timer + 20000;   // Give 20 sec. advance to the DEC. We will revise later.
+      // Slew_timer = millis();
+      // Slew_RA_timer = Slew_timer + 20000;   // Give 20 sec. advance to the DEC. We will revise later.
     } else {
       Serial3.print("1rDUINO Scope: Object Below Horizon! #");
     }
@@ -492,8 +492,8 @@ void considerBTCommands() {
       IS_OBJ_FOUND = false;
       IS_OBJECT_RA_FOUND = false;
       IS_OBJECT_DEC_FOUND = false;
-      Slew_timer = millis();
-      Slew_RA_timer = Slew_timer + 20000;   // Give 20 sec. advance to the DEC. We will revise later.
+      // Slew_timer = millis();
+      // Slew_RA_timer = Slew_timer + 20000;   // Give 20 sec. advance to the DEC. We will revise later.
     }
     drawMainScreen();
     BT_COMMAND_STR = "";

@@ -64,6 +64,18 @@
  *     -  Added backlash compensation when changing direction
  *     -  Added backlash compensation setting menu, store setting to SD card
  *     -  Fixed getting current time when calculating planets position, now getting time directly from RTC
+ *     -  Add pager to star selection screen 
+ *     -  skip time setting screen during startup
+ *     -  Back button on setting time
+*/
+
+/*     To Do
+       -  Hangup during star alignment
+       -  speed DEC should be decreased according gear ratio
+       -  manual meridian flip?
+       -  LST displays minutes > 59
+
+
 */
 
 #include "defines.h" //notes, colors, stars and planets
@@ -187,7 +199,7 @@ float delta_a_DEC = 0;
 int Iterative_Star_Index = 0;
 String Prev_Obj_Start;
 int lastScreenUpdateTimer;
-unsigned long Slew_timer, Slew_RA_timer = 0;
+// unsigned long Slew_timer, Slew_RA_timer = 0;
 int OBJECT_Index;
 String OBJECT_NAME;
 String OBJECT_DESCR;
@@ -220,7 +232,7 @@ String BTs;
 
 int last_button, MESS_PAGER, TREAS_PAGER, STARS_PAGER, CUSTOM_PAGER;
 int NR_MESS, NR_TREAS, NR_CUSTOM;
-int MESS_PAGES, TREAS_PAGES, CUSTOM_PAGES;
+int MESS_PAGES, TREAS_PAGES, CUSTOM_PAGES, STARS_PAGES;
 
 boolean IS_TFT_ON = true;
 boolean IS_STEPPERS_ON = true;
@@ -841,7 +853,8 @@ void setup(void)
 
 //CURRENT_SCREEN = 1;
 #ifdef no_gps
-  drawClockScreen(); // Skip GPS
+  // drawClockScreen(); // Skip GPS
+  drawSelectAlignment();
 #else
   drawGPSScreen();
 #endif
@@ -1053,6 +1066,34 @@ void loop(void)
       debug = Serial.parseInt();
       Serial.print("Serial debug set to: ");
       Serial.println(debug);
+    }
+    if (instr == 'm')
+    {
+      int a = Serial.parseInt();
+      deb_println("Set coordinates just before meridian flip: ");
+      calculateLST_HA();
+
+      double to_DEC_RA = double(a);
+
+      OBJECT_RA_H = int(to_DEC_RA);
+      OBJECT_RA_M = (to_DEC_RA - OBJECT_RA_H) * 60;
+
+      deb_print("Calc RA_H: ");
+      deb_print(OBJECT_RA_H);
+      deb_print("Calc RA_M: ");
+      deb_print(OBJECT_RA_M);
+
+      OBJECT_DEC_D = 61;
+      OBJECT_DEC_M = 0;
+
+      calculateLST_HA();
+      Timer3.stop(); //
+
+      IS_TRACKING = false;
+
+      IS_OBJ_FOUND = false;
+      IS_OBJECT_RA_FOUND = false;
+      IS_OBJECT_DEC_FOUND = false;
     }
   }
 
